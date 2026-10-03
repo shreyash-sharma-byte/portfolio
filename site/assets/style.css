@@ -1,0 +1,812 @@
+/* ==========================================================================
+   Shreyash Sharma — portfolio
+   An information console. This site is its own surface: it does not import
+   another application's palette (front-page-design-spec §3). It shares the
+   *structure* — density, type hierarchy, prohibitions — not the colours.
+
+   Standing rules enforced here:
+     - no gradients, no glassmorphism, no blurred glows, no decorative shadows
+     - border-radius never above 4px; no shadows at all — separation is hairlines
+     - colour is reserved for meaning: one accent for links, focus and the
+       primary action, plus the credit and warn states. Every token here is
+       used; none is kept for a state the site does not have.
+     - hierarchy comes from type scale, weight and spacing
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --bg: #ffffff;
+  --surface: #fcfcfb;
+  --surface-2: #f4f4f2;
+
+  /* ink scale */
+  --ink: #14161a;
+  --ink-2: #3c424c;
+  --muted: #6a7280;
+
+  /* hairlines */
+  --line: #e5e6e9;
+  --line-2: #cfd3d9;
+
+  /* one accent, used only for meaning */
+  --accent: #0b5c62;
+  --accent-strong: #08464b;
+  --on-accent: #ffffff;
+
+  /* semantic state */
+  --credit: #17694a;
+  --warn: #7d5400;
+  --credit-bg: #eef7f1;
+  --warn-bg: #fbf4e6;
+
+  --radius: 4px;
+
+  /* self-hosted stacks: no webfont, no network request, no FOUT */
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* --------------------------------------------------------------------------
+   Reset
+   -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+/* 17px root. Every size below is rem, so this scales the type as one system; the
+   spacing rhythm is px and deliberately does not move with it. A wide column only
+   stays readable if the text grows with it: at a 16px root the same measure ran to
+   ~93 characters a line, past comfortable reading. 18px overcorrected into bulk. */
+html { -webkit-text-size-adjust: 100%; font-size: 106.25%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 0.9375rem;   /* 15px */
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, p, ul, ol, figure, pre, table { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--accent-strong); }
+
+/* Focus is never removed. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+/* In-page jumps and the skip link landed under the 65px sticky top bar, hiding
+   the heading they pointed at. Measured: target top 0 -> 72px. */
+[id] { scroll-margin-top: 72px; }
+
+/* --------------------------------------------------------------------------
+   Skip link
+   -------------------------------------------------------------------------- */
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--accent);
+  color: var(--on-accent);
+  padding: 8px 14px;
+  z-index: 20;
+  text-decoration: none;
+}
+.skip:focus { left: 8px; top: 8px; color: var(--on-accent); }
+
+/* --------------------------------------------------------------------------
+   Top bar (spec §8.1) — sticky, wordmark left, way in stays reachable
+   -------------------------------------------------------------------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar-in {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.brand {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.brand:hover { color: var(--ink); }
+
+.topnav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.topnav a {
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+}
+.topnav a:hover { background: var(--surface-2); color: var(--ink); }
+.topnav a[aria-current="page"] { color: var(--ink); font-weight: 600; }
+
+/* `.topnav a` above is more specific than `.btn-primary`, so the primary
+   button's label colour has to be restated here or it renders dark-on-accent
+   and reads as an empty box. */
+.topnav a.btn-primary,
+.topnav a.btn-primary:hover {
+  color: var(--on-accent);
+}
+.topnav a.btn-primary:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+/* --------------------------------------------------------------------------
+   Page shell (spec §6)
+   -------------------------------------------------------------------------- */
+
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 16px 56px;
+}
+
+.page-head { padding-bottom: 20px; }
+
+/* Back link on a project page. Sits above the eyebrow, so it needs its own
+   breathing room or the two read as one cramped block. */
+.crumbs {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.crumbs a { text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.page-title {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.page-sub {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-top: 8px;
+  max-width: 84ch;
+}
+
+.section-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.section > .section-title { margin-bottom: 12px; }
+
+.hint { font-size: 0.75rem; color: var(--muted); }
+.text-muted { color: var(--muted); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* Reading measure for hairline list entries. Applied as padding, not max-width:
+   max-width shortens the border with the text, so each entry's rule ended short of
+   the section rule above it. Mobile needs no cap — 84ch exceeds the column there. */
+@media (min-width: 940px) {
+  .caps-list li, .flow li { padding-right: 19%; }
+}
+
+/* --------------------------------------------------------------------------
+   Entry block (spec §8.2) — value line, action, fine print.
+   Stacked at every width; the three sibling apps must agree.
+   -------------------------------------------------------------------------- */
+
+.entry {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 16px 0;
+  margin-top: 20px;
+}
+.entry-line { font-size: 0.9375rem; max-width: 77ch; }
+.entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.entry-fine {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 12px;
+  max-width: 77ch;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons (spec §6)
+   -------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+  min-height: 44px;   /* tap target */
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--on-accent); }
+
+.btn-ghost {
+  border-color: var(--line-2);
+  color: var(--ink-2);
+  background: transparent;
+}
+.btn-ghost:hover { background: var(--surface-2); color: var(--ink); }
+
+.btn-sm { padding: 8px 14px; min-height: 36px; }
+
+/* --------------------------------------------------------------------------
+   Badges — status labels. Honest labelling is a standing rule: never present
+   planned work as shipped.
+   -------------------------------------------------------------------------- */
+
+.badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+  border: 1px solid var(--line-2);
+  color: var(--ink-2);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.badge-impl { color: var(--credit); border-color: #bcd9c9; background: var(--credit-bg); }
+.badge-plan { color: var(--warn); border-color: #e2cfa4; background: var(--warn-bg); }
+
+/* --------------------------------------------------------------------------
+   Project list — hairline-separated, never a card grid (spec §7)
+   -------------------------------------------------------------------------- */
+
+.projects { border-top: 1px solid var(--line); }
+
+.project {
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+}
+
+.project-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-name {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.project-name a { color: var(--ink); text-decoration: none; }
+.project-name a:hover { color: var(--accent); text-decoration: underline; }
+
+.project-what {
+  font-size: 0.875rem;
+  color: var(--ink-2);
+  margin-top: 6px;
+  max-width: 84ch;
+}
+
+.project-topo {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-top: 8px;
+  font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.project-dec {
+  font-size: 0.875rem;
+  color: var(--ink-2);
+  margin-top: 8px;
+  max-width: 84ch;
+}
+.project-what b,
+.project-dec b,
+.project-foot b { color: var(--ink); font-weight: 600; }
+
+.project-foot {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  /* 12px row gap, not 4px: at 4px the wrapped 19.5px-tall links sat 23.5px apart,
+     under the 24px minimum in WCAG 2.2 SC 2.5.8. */
+  gap: 12px 14px;
+  align-items: center;
+  font-size: 0.8125rem;
+}
+.project-foot a { text-decoration: none; }
+.project-foot a:hover { text-decoration: underline; }
+
+.project-stack {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 8px;
+  font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------------------
+   Definition rows — dense key/value, hairline separated
+   -------------------------------------------------------------------------- */
+
+.kv { border-top: 1px solid var(--line); }
+.kv-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+.kv-key {
+  flex: 0 0 190px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.kv-val { flex: 1 1 260px; min-width: 0; }
+
+/* --------------------------------------------------------------------------
+   Capability groups — label + consequence, hairline separated (spec §8.6)
+   -------------------------------------------------------------------------- */
+
+.caps { margin-top: 4px; }
+.caps-group + .caps-group { margin-top: 24px; }
+.caps-group > .section-title { margin-bottom: 8px; }
+
+.caps-list { border-top: 1px solid var(--line); }
+.caps-list li {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+.caps-list b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   Preformatted architecture diagrams.
+   Diagrams are authored to fit 48 columns so they do not force the page to
+   scroll at 390px; overflow-x is a contained safety net, never page-level.
+   -------------------------------------------------------------------------- */
+
+.pre {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  overflow-x: auto;
+  color: var(--ink-2);
+  white-space: pre;
+  tab-size: 2;
+}
+.pre-cap {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   Numbered flow — the real request path
+   -------------------------------------------------------------------------- */
+
+.flow { counter-reset: step; border-top: 1px solid var(--line); }
+.flow li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 40px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+.flow li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  /* Deliberately --muted and not a lighter grey: every lighter step measured
+     under 3:1 on white and failed WCAG 1.4.3. --muted is 4.85:1. */
+  color: var(--muted);
+}
+.flow li b { color: var(--ink); font-weight: 600; }
+.flow code {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--ink);
+  background: var(--surface-2);
+  padding: 1px 4px;
+  border-radius: 2px;
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------------------
+   Tables
+   -------------------------------------------------------------------------- */
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.875rem;
+  min-width: 0;
+}
+caption {
+  caption-side: top;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding-bottom: 6px;
+}
+th, td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  /* break-word, NOT anywhere: `anywhere` feeds min-content sizing, which let the
+     table shrink below its content instead of letting .table-wrap scroll. On the
+     cartographer table that collapsed the first column to 38px — one letter per
+     line — and made rows 458px tall. Measured: break-word gives 133px / 80px. */
+  overflow-wrap: break-word;
+}
+thead th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line-2);
+}
+tbody tr:last-child td { border-bottom: 0; }
+td.num, th.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* --------------------------------------------------------------------------
+   Alerts
+   -------------------------------------------------------------------------- */
+
+.alert {
+  border: 1px solid var(--line-2);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+  background: var(--surface);
+}
+.alert-warn { border-left-color: var(--warn); background: var(--warn-bg); }
+.alert b { color: var(--ink); }
+.alert + .alert { margin-top: 8px; }
+
+/* --------------------------------------------------------------------------
+   Screenshots
+   -------------------------------------------------------------------------- */
+
+.shots {
+  /* Columns, not a grid: the screenshots come in pairs of 1280x900 and 390x844,
+     and a grid row is as tall as its tallest cell — which left ~492px of void
+     beside every phone capture. Columns pack them. */
+  columns: 1;
+  column-gap: 16px;
+  margin-top: 12px;
+}
+@media (min-width: 640px) {
+  .shots { columns: 2; }
+}
+.shot { break-inside: avoid; margin-bottom: 16px; min-width: 0; }
+.shot img {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.shot figcaption {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   Notes (engineering write-ups)
+   -------------------------------------------------------------------------- */
+
+.note-title {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.note-meta {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.note-body { margin-top: 10px; max-width: 77ch; }
+.note-body p + p { margin-top: 10px; }
+.note-body p { font-size: 0.9375rem; color: var(--ink-2); }
+.note-body b { color: var(--ink); }
+
+/* --------------------------------------------------------------------------
+   Footer (spec §8.9) — exact credit line, last thing on every page
+   -------------------------------------------------------------------------- */
+
+.footer {
+  border-top: 1px solid var(--line);
+  margin-top: 40px;
+  padding: 16px;
+  background: var(--surface);
+}
+.footer-in {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: baseline;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.footer a {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.footer a:hover { color: var(--ink); }
+.footer .sep { color: var(--muted); }
+
+/* --------------------------------------------------------------------------
+   Utilities
+   -------------------------------------------------------------------------- */
+
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+
+/* --------------------------------------------------------------------------
+   Proof strip — headline figures. The number carries the meaning, the label
+   says what it counts; nothing here is decorative.
+   -------------------------------------------------------------------------- */
+
+.proof {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px 20px;
+  padding: 16px 0;
+  margin-top: 20px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+@media (min-width: 640px) {
+  .proof { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* Four across only once the figures have room: the labels are sentences, and at
+   640px four columns wrapped them to five lines each. */
+@media (min-width: 940px) {
+  .proof { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.proof-n {
+  font-family: var(--mono);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.proof-l {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: 1.35;
+  max-width: 26ch;
+}
+
+/* Availability line — the thing a recruiter looks for first. */
+.avail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+/* flex-start, not center: the availability line wraps to two lines on a phone and
+   centring floated the dot down beside the second one. 0.5em lands it on the first
+   line's optical centre without hard-coding a pixel offset. */
+.avail-item { display: inline-flex; align-items: flex-start; gap: 6px; }
+.avail-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--credit);
+  flex: none;
+  margin-top: 0.5em;
+}
+
+/* --------------------------------------------------------------------------
+   Project entry with a screenshot. Text leads on every width; the thumbnail
+   sits beside it on desktop and above it on a phone.
+   -------------------------------------------------------------------------- */
+
+.project-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "thumb" "body";
+  gap: 12px;
+}
+/* 860px, not 800: with a 320px thumbnail the side-by-side split leaves the body
+   under 500px below this, which wraps the card text to ~48 characters. */
+@media (min-width: 940px) {
+  .project-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-areas: "body thumb";
+    gap: 28px;
+    align-items: start;
+  }
+}
+.project-body { grid-area: body; min-width: 0; }
+.project-thumb { grid-area: thumb; display: block; min-width: 0; }
+.project-thumb img {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.project-thumb:hover img { border-color: var(--line-2); }
+
+/* --------------------------------------------------------------------------
+   Narrow screens — 390px must work with no horizontal scroll.
+   min-width: 0 on flex children is deliberate: the flexbox default of
+   min-width:auto is what let a 784px column size itself inside a 390px
+   viewport. Never reintroduce it.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 639px) {
+  .topnav { gap: 0; }
+  .topnav a {
+    padding: 8px 5px;
+    font-size: 0.625rem;
+    /* tap targets stay >= 44px even when the label shrinks */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  /* Five nav items plus the wordmark must fit 362px of usable width, or the
+     sticky bar wraps to two rows and eats 108px of an 844px screen. */
+  .topbar-in { gap: 8px; padding: 10px 12px; }
+  .brand { display: inline-flex; align-items: center; min-height: 44px; font-size: 0.6875rem; }
+  .btn-sm { min-height: 44px; padding: 8px 10px; }
+  /* Link lists, not prose: these are not covered by the inline exception, so
+     they get the same 44px floor as the buttons. */
+  .project-foot a,
+  .footer a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .kv-key { flex: 0 0 100%; }
+  /* The diagram type is rem-based like everything else, but the mobile box is
+     340px of usable width, so 48 columns need a slightly smaller face than
+     desktop. Sized to the box rather than guessed: 48 cols at 11.5px is 331px. */
+  .pre { padding: 10px; font-size: 0.64rem; }
+  .page { padding: 20px 14px 44px; }
+}
+
+/* --------------------------------------------------------------------------
+   Print — a recruiter will print this. Chrome is noise; the content and the
+   link targets are what matter.
+   -------------------------------------------------------------------------- */
+
+@media print {
+  /* The footer stays: it carries the only email address, and hiding it left a
+     printed page with no way to make contact. */
+  .topbar,
+  .skip,
+  .entry-actions,
+  .project-thumb { display: none; }
+
+  body { font-size: 11pt; }
+  .page { max-width: none; padding: 0; }
+
+  a { color: var(--ink); text-decoration: none; }
+  a[href^="http"]::after,
+  a[href^="mailto"]::after {
+    content: " (" attr(href) ")";
+    font-size: 8.5pt;
+    color: var(--muted);
+  }
+
+  .section { break-inside: avoid; }
+  .project { break-inside: avoid; }
+
+  .pre { border-color: var(--line-2); }
+  .proof { border-color: var(--line-2); }
+}

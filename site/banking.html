@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banking Microservices · Shreyash Sharma</title>
+<meta name="description" content="An eight-service banking platform: atomic transfers behind a conditional-update overdraft guard, a transactional outbox and an immutable ledger over Kafka.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Banking Microservices · Shreyash Sharma">
+<meta property="og:description" content="An eight-service banking platform: atomic transfers behind a conditional-update overdraft guard, a transactional outbox and an immutable ledger over Kafka.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Banking Microservices · Shreyash Sharma">
+<meta name="twitter:description" content="An eight-service banking platform: atomic transfers behind a conditional-update overdraft guard, a transactional outbox and an immutable ledger over Kafka.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash Sharma</a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html" aria-current="page">Work</a>
+      <a href="about.html">About</a>
+      <a href="notes.html">Notes</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="crumbs"><a href="work.html">← All work</a></p>
+    <p class="eyebrow">Banking platform</p>
+    <h1 class="page-title">Banking Microservices</h1>
+    <p class="page-sub">
+      A retail and business banking platform: accounts, atomic money transfers, an
+      event-driven payment pipeline, an immutable unified ledger, and role-based access
+      across eight services behind an API gateway — fronted by an Angular client. Built
+      to answer a specific question: what does money movement actually look like when it
+      is not one <span class="num">UPDATE</span> in one database?
+    </p>
+  </div>
+
+  <p class="project-what" style="margin-top:14px;">
+      <b>In plain terms:</b> A bank's core plumbing: money moves between accounts in one database transaction, so two transfers racing each other cannot overdraw an account, and every movement lands in a ledger that is never updated or deleted.
+    </p>
+
+  <section class="entry" aria-label="Status and actions">
+    <p class="entry-line">
+      Running over a real database with seeded demo data, across five databases and eight services. A transfer
+      completes end to end — gateway, payment service, database transaction, outbox,
+      Kafka, ledger — and the ledger entry is visible in the client afterwards.
+    </p>
+    <div class="entry-actions">
+      <a class="btn btn-primary" href="https://shreyash-banking.tailae7ebb.ts.net" target="_blank" rel="noopener">Open the live demo</a>
+      <a class="btn btn-ghost" href="https://github.com/shreyash-sharma-byte/banking-microservices" target="_blank" rel="noopener">Platform source</a>
+      <a class="btn btn-ghost" href="https://github.com/shreyash-sharma-byte/banking-ui" target="_blank" rel="noopener">Client source</a>
+    </div>
+    <p class="entry-fine">On a fixed address — self-hosted, so it is up whenever the machine is running. The sign-in page displays its own demo accounts, so nothing else has to be arranged.</p>
+  </section>
+
+  <section class="section" aria-labelledby="arch">
+    <h2 class="section-title" id="arch">Architecture</h2>
+    <p class="pre-cap" style="margin-top:12px;">Deployed topology</p>
+    <pre class="pre">browser
+  |
+  v
+nginx edge :8804 --------- Angular 22 bundle
+  |
+  v
+api-gateway :8086 ---- JWT check, routing
+  |
+  +--&gt; auth-service      --&gt; auth_db
+  +--&gt; account-service   --&gt; account_db
+  +--&gt; payment-service   --&gt; payment_db
+  +--&gt; transaction-svc   --&gt; transaction_db
+  `--&gt; notification-svc  --&gt; notification_db
+
+payment --ledger-batches--&gt; Kafka--&gt; transaction
+transaction --ledger-confirm--&gt; Kafka--&gt; payment
+config :8888 · eureka :8761 · zipkin :9411</pre>
+
+    <p class="pre-cap" style="margin-top:24px;">A transfer, in order</p>
+    <ol class="flow">
+      <li>The client posts a transfer with a bearer token and an <b>idempotency key</b>.</li>
+      <li>The gateway validates the token and forwards user id, role, correlation id and a shared gateway secret. The five business services reject a request that arrives without it; configuration and service discovery carry no such filter, so they sit outside that boundary rather than behind it.</li>
+      <li>Payment service opens one transaction and checks the idempotency key. A repeat of the same request returns the original payment id instead of moving money again, and a unique constraint on the column is the database-level backstop against a duplicate payment row.</li>
+      <li>Payment service calls account service to move the money.</li>
+      <li>Account service runs one <b>ACID transaction</b>: a conditional debit that only matches when the balance covers it, then the credit, then two audit rows — all in the same transaction. If the credit fails the whole thing rolls back.</li>
+      <li>Payment service writes the payment row plus <b>three outbox rows</b> in that same transaction. If the transaction commits, the events exist; if it does not, they do not. Money does not move without the ledger being told — except by the amount-sign path listed under Known limitations.</li>
+      <li>Two pollers pick up outbox rows <span class="num">FOR UPDATE</span> — notifications every second, ledger batches every ten — mark them <span class="num">SENDING</span> with a batch id, and publish to Kafka.</li>
+      <li>Transaction service checks the batch id first. A batch it has already processed is answered with a re-sent confirmation rather than applied twice. New entries are inserted with <span class="num">ON CONFLICT DO NOTHING</span>.</li>
+      <li>The ledger confirms back over Kafka. <span class="num">COMMITTED</span> marks the batch published; <span class="num">FAILED</span> marks it for retry. A duplicate confirmation is ignored.</li>
+    </ol>
+  </section>
+
+  <section class="section" aria-labelledby="dec">
+    <h2 class="section-title" id="dec">Key decisions</h2>
+    <ul class="caps-list">
+      <li><b>Database per service.</b> Five PostgreSQL databases, no shared tables. Cross-service references are logical, enforced in application code — so no service can quietly join against another's data, and each can be migrated on its own.</li>
+      <li><b>Race-free overdraft protection.</b> One ACID transaction per transfer with a conditional update on the balance. Two concurrent transfers cannot overdraw an account, and there is no application-level lock to get wrong. A saga was considered and deliberately deferred — the transfer is atomic in one database, so it is not needed yet.</li>
+      <li><b>Transactional outbox with a three-state machine.</b> Ledger entries move <span class="num">PENDING → SENDING → PUBLISHED</span>, with <span class="num">ERROR</span> on a failed confirmation, retry after a count threshold, a reaper that resends notification rows left in <span class="num">SENDING</span>, and clean-up of published rows. This is what makes "no ledger entry lost, none applied twice" hold under retry rather than
+      depend on timing.</li>
+      <li><b>Idempotency at every level.</b> Duplicate payment requests are rejected on the key; a batch id blocks a double ledger insert; a conflict clause makes row-level retries safe; duplicate confirmations are ignored. Each layer assumes the one above it may deliver twice.</li>
+      <li><b>An immutable ledger.</b> Transaction service is append-only and is the single source of truth for history and reporting, fed by every service that moves money. There is no update and no delete path.</li>
+      <li><b>Tokens with a short life and a rotation.</b> Access tokens last an hour; refresh tokens last seven days, are stored SHA-256 hashed, rotate on use, and are revoked on logout through a blacklist. Passwords are bcrypt hashed.</li>
+      <li><b>Roles checked twice.</b> RETAIL, BUSINESS, EMPLOYEE, ADMIN and AUDITOR — enforced at the gateway and re-checked inside each service against the forwarded identity, so a request that bypasses the gateway still fails.</li>
+      <li><b>Correlation ids on every request.</b> Generated at the gateway or by the client, propagated through logs, and printed in the log pattern — so one request can be followed across five services without a debugger.</li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="svc">
+    <h2 class="section-title" id="svc">Services and ports</h2>
+    <div class="table-wrap" style="margin-top:12px;">
+      <table>
+        <caption>Deployed ports; the repository's compose file uses different ones</caption>
+        <thead>
+          <tr><th scope="col">Service</th><th scope="col" class="num">Port</th><th scope="col">Role</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>config-server</td><td class="num">8888</td><td>Centralised configuration</td></tr>
+          <tr><td>eureka-server</td><td class="num">8761</td><td>Service discovery</td></tr>
+          <tr><td>api-gateway</td><td class="num">8086</td><td>Single entry point, token check, routing, correlation ids</td></tr>
+          <tr><td>auth-service</td><td class="num">8092</td><td>Users and roles, token issue, refresh rotation, revocation</td></tr>
+          <tr><td>account-service</td><td class="num">8082</td><td>Profiles, accounts, the atomic transfer, employees, audit log</td></tr>
+          <tr><td>payment-service</td><td class="num">8083</td><td>Payment orchestration, idempotency, outbox, pollers</td></tr>
+          <tr><td>transaction-service</td><td class="num">8084</td><td>Immutable unified ledger, batch consumer, confirmations</td></tr>
+          <tr><td>notification-service</td><td class="num">8085</td><td>Kafka-driven alerts and history</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint mt-8">Kafka topics: <span class="num">payment-events</span>, <span class="num">ledger-batches</span>, <span class="num">ledger-confirm</span>.</p>
+  </section>
+
+  <section class="section" aria-labelledby="met">
+    <h2 class="section-title" id="met">Verified metrics</h2>
+    <div class="table-wrap" style="margin-top:12px;">
+      <table>
+        <caption>Measured from the source and the running deployment</caption>
+        <thead><tr><th scope="col">Metric</th><th scope="col" class="num">Value</th></tr></thead>
+        <tbody>
+          <tr><td>Services</td><td class="num">8</td></tr>
+          <tr><td>PostgreSQL databases</td><td class="num">5</td></tr>
+          <tr><td>Tables declared across the five schemas</td><td class="num">17</td></tr>
+          <tr><td>Kafka topics</td><td class="num">3</td></tr>
+          <tr><td>Unit tests, all passing</td><td class="num">76</td></tr>
+          <tr><td>Ledger partitions (17 monthly + DEFAULT)</td><td class="num">18</td></tr>
+          <tr><td>Architecture decision records</td><td class="num">9</td></tr>
+          <tr><td>Endpoints</td><td class="num">39</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint mt-8">
+      There is no end-to-end test suite for this platform — the 76 tests are unit and
+      slice tests inside each service, and the recorded all-green run predates the current
+      commit, which has since changed a schema and the gateway configuration that these tests
+      do not cover. The service count, ports and partition count were checked against the
+      running deployment.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="lim">
+    <h2 class="section-title" id="lim">Known limitations</h2>
+    <div class="alert alert-warn" style="margin-top:12px;">
+      <b>The transfer endpoint does not check the amount's sign.</b>
+      <span class="num">AccountController.transfer()</span> parses the amount and never tests it,
+      and the only guard is the conditional debit — whose condition a negative amount satisfies
+      vacuously. A negative amount therefore runs the transfer backwards. Sent through the
+      payment path it fails later, on the <span class="num">CHECK (amount &gt; 0)</span>
+      constraint: by then the account leg has committed and the payment row, the outbox rows and
+      the ledger entry never exist. That is precisely the window this design is built to prevent,
+      and it is open. One sign check before the transaction closes it.
+    </div>
+    <div class="alert alert-warn">
+      <b>Ledger reads are not ownership-checked.</b>
+      <span class="num">GET /api/transactions</span> and
+      <span class="num">POST /api/transactions/search</span> both take an
+      <span class="num">accountId</span> and filter the ledger by it without verifying that
+      the caller owns that account. The gateway forwards the user id and role; the ledger
+      controller does not read them. Any authenticated user can read any account's ledger
+      by supplying its id.
+    </div>
+    <p class="project-what mt-16">
+      The same gap applies to reading a single ledger entry by id and to the daily summary
+      endpoint. The correct fix is to resolve the account through account service and compare
+      the owner, allowing employee, admin and auditor roles unrestricted access — which is
+      what the other services already do. It is not fixed here, because it changes
+      request-time behaviour on a live demo and that is a decision rather than a patch.
+    </p>
+    <p class="project-what">
+      The transfer endpoint carries no role and no ownership check either: it never reads the
+      forwarded user id, and the gateway routes <span class="num">/api/accounts/**</span> to it,
+      so any authenticated user can call it against any account.
+    </p>
+    <p class="project-what">
+      The idempotency check is not atomic with the transfer. The check, the money movement and the
+      insert are separate steps, so two in-flight requests carrying the same key can both move
+      money; the unique constraint then refuses the second payment row and discards its outbox
+      rows.
+    </p>
+    <p class="project-what">
+      Stated plainly because it matters: the role model is enforced on the account, business and
+      admin paths and re-checked inside each service, but it is <b>not</b> complete. The transfer
+      endpoint and the ledger read paths are the exceptions, and both are listed above rather
+      than left to be found.
+    </p>
+    <p class="hint mt-16">
+      Two smaller notes. Notification email and SMS are simulated to the console rather than
+      sent. Zipkin is configured and the container runs, but no tracing dependency is present
+      in the service builds, so what actually propagates today is the correlation id and
+      structured logs.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="shots">
+    <h2 class="section-title" id="shots">Screenshots</h2>
+    <p class="hint" style="margin-top:8px;">Captured from the live deployment. The transfer shown was executed end to end through the gateway, the payment service, Kafka and the ledger.</p>
+    <div class="shots">
+      <figure class="shot">
+        <img src="assets/shots/demo-banking-1280.png" alt="The banking client's own sign-in page, with a demo accounts table listing a retail customer and a staff admin account" width="1280" height="900" loading="lazy">
+        <figcaption>The client's own sign-in page, which lists its demo accounts. This platform does not use Keycloak.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/landing-banking-1280.png" alt="Banking welcome screen showing the platform topology before sign-in" width="1280" height="900" loading="lazy">
+        <figcaption>Pre-login welcome screen — the topology is explained before anyone signs in.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/banking-transfer-1280.png" alt="Transfer form in the banking client" width="1280" height="900" loading="lazy">
+        <figcaption>The transfer form. Submitting it runs the full pipeline described above.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/banking-dashboard-1280.png" alt="Banking dashboard listing accounts and recent ledger entries" width="1280" height="900" loading="lazy">
+        <figcaption>Accounts and the most recent ledger entries, read back from the ledger service.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/banking-history-1280.png" alt="Filtered and paged ledger history in the banking client" width="1280" height="900" loading="lazy">
+        <figcaption>Ledger history, filtered and paged.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/bk-final-390_dashboard.png" alt="The banking client at phone width, showing the account list and recent ledger entries" width="390" height="844" loading="lazy">
+        <figcaption>The same client at 390px.</figcaption>
+      </figure>
+    </div>
+    <p class="hint mt-16">
+      The client is also verified at phone width: an earlier version scrolled sideways
+      because a flex column was missing <span class="num">min-width: 0</span> — that story is
+      in the <a href="notes.html">engineering notes</a>.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="src">
+    <h2 class="section-title" id="src">Source</h2>
+    <div class="project-foot" style="margin-top:12px;">
+      <a href="https://github.com/shreyash-sharma-byte/banking-microservices" target="_blank" rel="noopener">banking-microservices</a>
+      <a href="https://github.com/shreyash-sharma-byte/banking-ui" target="_blank" rel="noopener">banking-ui</a>
+      <a href="index.html">All projects</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

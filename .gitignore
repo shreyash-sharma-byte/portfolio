@@ -1,0 +1,7 @@
+# Private infrastructure runbook — deliberately not published.
+HOSTING.md
+
+# Python bytecode
+__pycache__/
+*.pyc
+.DS_Store

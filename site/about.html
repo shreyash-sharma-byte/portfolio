@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About · Shreyash Sharma</title>
+<meta name="description" content="Full-stack engineer in Pune. Three years in insurance and banking, architecture-first: Java, Spring Boot, Angular, PostgreSQL, Kafka — and the measurements.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="profile">
+<meta property="og:title" content="About · Shreyash Sharma">
+<meta property="og:description" content="Full-stack engineer in Pune. Three years in insurance and banking, architecture-first: Java, Spring Boot, Angular, PostgreSQL, Kafka — and the measurements.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="About · Shreyash Sharma">
+<meta name="twitter:description" content="Full-stack engineer in Pune. Three years in insurance and banking, architecture-first: Java, Spring Boot, Angular, PostgreSQL, Kafka — and the measurements.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash Sharma</a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html">Work</a>
+      <a href="about.html" aria-current="page">About</a>
+      <a href="notes.html">Notes</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="eyebrow">About</p>
+    <h1 class="page-title">How I work</h1>
+    <p class="page-sub">
+      Architecture before code, measurements rather than estimates, and a habit of writing
+      down the result — including when it contradicted the estimate I started with.
+    </p>
+  </div>
+
+  <section class="section" aria-label="About me">
+    <div class="note-body">
+      <p>
+        I am a full-stack engineer with three years of professional experience, working
+        mainly on insurance and banking platforms. In practice that means Java and Spring
+        Boot services, Angular front ends, and relational databases — PostgreSQL by
+        preference, and Oracle with PL/SQL where the data already lives. I have spent
+        enough of that time on product configuration and policy issuance to know where
+        these systems actually break, and it is rarely the forms.
+      </p>
+      <p>
+        I work architecture first. Before writing code I want to know what the request path
+        is, who is allowed to call it, what happens when it fails halfway through, and how
+        I will know it worked. That habit is why the <a href="notes.html">engineering
+        notes</a> are mostly about things that broke and what the measurement said
+        afterwards — two of those results contradicted the estimate I started with, and
+        the measured number is the more useful one to publish.
+      </p>
+      <p>
+        I am comfortable being the person who talks to the business side as well as the
+        code: gathering the requirement properly, saying early when something will not
+        work, and writing the decision down so the next engineer does not have to
+        rediscover it. I am open to full-time full-stack roles and to freelance work.
+      </p>
+    </div>
+
+    <h2 class="section-title text-muted mt-24">At a glance</h2>
+    <div class="kv mt-8">
+      <div class="kv-row"><span class="kv-key">Current title</span><span class="kv-val">Senior Application Engineer (full-stack) — 2023 to present</span></div>
+      <div class="kv-row"><span class="kv-key">Domain</span><span class="kv-val">Insurance and banking: product configuration, policy issuance, claims, payments and ledgers</span></div>
+      <div class="kv-row"><span class="kv-key">Core stack</span><span class="kv-val">Java · Spring Boot · Angular · TypeScript · Python · PostgreSQL</span></div>
+      <div class="kv-row"><span class="kv-key">Also working in</span><span class="kv-val">Apache Kafka · Keycloak · Spring Cloud · Django · FastAPI · Docker · Oracle and PL/SQL</span></div>
+      <div class="kv-row"><span class="kv-key">Also worked with</span><span class="kv-val">React · Node.js · Go</span></div>
+      <div class="kv-row"><span class="kv-key">Location</span><span class="kv-val">Pune, India — IST (UTC+5:30)</span></div>
+      <div class="kv-row"><span class="kv-key">Open to</span><span class="kv-val">Full-time full-stack roles, and freelance work</span></div>
+      <div class="kv-row"><span class="kv-key">Education</span><span class="kv-val">BE, Information Technology — International Institute of Information Technology, Pune (2019–2023)</span></div>
+      <div class="kv-row"><span class="kv-key">Certifications</span><span class="kv-val">RAG Systems in Practice · AWS Cloud Technical Essentials · Automation and Scripting with Python</span></div>
+    </div>
+  </section>
+
+<section class="section" aria-labelledby="workexp">
+    <h2 class="section-title" id="workexp">At work</h2>
+    <p class="project-what" style="margin-top:12px;">
+      Three years in a full-time role at an insurance company, and more than twenty projects in
+      that time — automation, data migration, full applications, Python tooling, AI integration,
+      query and performance work, and automated test utilities.
+    </p>
+    <p class="project-what">
+      Three of the larger ones:
+    </p>
+    <ul class="caps-list mt-16">
+      <li><b>Insurance product configuration platform.</b> Business users configure policy products themselves, in the interface. A configuration that took about <b>two weeks</b> now takes about <b>three days</b>. Underneath is a metadata-driven Angular front end — dynamic reactive forms with conditional rendering, a maker-checker step before anything goes live, Keycloak single sign-on, and lazy loading with caching to keep it responsive. <span class="text-muted">Angular, Reactive Forms, PostgreSQL, Keycloak, Docker, Redis</span></li>
+      <li><b>Policy core and partner issuance APIs.</b> Insurance products configured inside the core policy system, plus the secure APIs that let third-party distributors issue against them — premium calculation, policy confirmation, JWT with role-based access, audit logging, and idempotent handling so a partner's retry does not issue twice. <span class="text-muted">Java, Spring Boot, Oracle 11g, REST, Keycloak, Redis</span></li>
+      <li><b>Automated testing and file-generation utility.</b> A configurable harness that validates APIs and generates XLSX and XML integration payloads in bulk, replacing a manual process that had been done by hand. <span class="text-muted">Python, REST, Oracle 11g, PL/SQL, JSON</span></li>
+    </ul>
+    <p class="hint mt-16">
+      Reported from my employment record: backend response times down <b>35%</b>, <b>15+</b>
+      REST APIs delivered for partner integrations, roughly <b>60%</b> of the manual backend
+      workflow automated, and <b>50%</b> less downtime at peak. The six independent systems
+      elsewhere on this site are the ones you can open and check yourself.
+    </p>
+  </section>
+
+<section class="section" aria-labelledby="how">
+    <h2 class="section-title" id="how">What I bring</h2>
+    <div class="caps">
+
+      <div class="caps-group">
+        <h3 class="section-title text-muted">Backend and platform</h3>
+        <ul class="caps-list">
+          <li><b>Service boundaries that hold.</b> Eight Spring Boot services with a shared config server and service discovery, each owning its own database — five databases, no shared tables, cross-service references enforced in application code rather than by a foreign key that spans them.</li>
+          <li><b>Concurrency taken seriously.</b> Money transfer as a single ACID transaction with a conditional update, so two concurrent requests cannot overdraw an account; optimistic locking by version compare-and-swap so a stale write gets a conflict instead of silently overwriting.</li>
+          <li><b>Delivery that survives failure.</b> A transactional outbox moves ledger entries through <span class="num">PENDING → SENDING → PUBLISHED</span> with batch confirmation, retry and error states — so an event is never lost because a broker was briefly unavailable, and never applied twice.</li>
+          <li><b>Schemas that age.</b> Thirty Flyway migrations on the insurance platform; monthly partition windows with a <span class="num">DEFAULT</span> catch-all on the banking ledger, after a single hardcoded partition expired and started rejecting every insert.</li>
+        </ul>
+      </div>
+
+      <div class="caps-group">
+        <h3 class="section-title text-muted">Identity, authority and audit</h3>
+        <ul class="caps-list">
+          <li><b>Federated sign-in across two realms.</b> OIDC with PKCE against Keycloak, with per-realm origin advertising so a single Keycloak instance can serve two realms on two different public hostnames — verified end to end with a real authorization-code flow, not just a discovery document.</li>
+          <li><b>Authority modelled, not improvised.</b> Per-product approval limits where a decision above the actor's level becomes a proposal referred upward, and a maker-checker path on configuration changes.</li>
+          <li><b>Permissions attached to the work.</b> Nine realm roles enforced at the station an instance currently sits at, rather than globally — so the same user can approve at one step and not at the next.</li>
+          <li><b>Audit that cannot be edited.</b> Append-only history with no update or delete endpoint, and in the insurance platform a database trigger that rejects both at the data layer.</li>
+        </ul>
+      </div>
+
+      <div class="caps-group">
+        <h3 class="section-title text-muted">Front ends and applied AI</h3>
+        <ul class="caps-list">
+          <li><b>Angular in production shape.</b> Angular 17 and 22 with typed service layers that mirror the API contract, route guards, HTTP interceptors and signals for async state.</li>
+          <li><b>Hand-written design systems.</b> Plain CSS with semantic tokens, no framework and no icon library, verified at 390px and 1280px with no horizontal scroll.</li>
+          <li><b>Retrieval over recall.</b> Clause retrieval from a FAISS index with cross-encoder re-ranking, answers that cite the sources they used, and an explicit refusal path when retrieval confidence is too low to answer.</li>
+          <li><b>Evaluation as a first-class step.</b> A local harness scoring section match, top-1 accuracy, mean reciprocal rank and coverage polarity — run against a fixed question set, and costing nothing because it never calls a model.</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+<section class="section" aria-labelledby="stack">
+    <h2 class="section-title" id="stack">Technology</h2>
+    <p class="project-topo" style="margin-top: 10px;">
+      Java 17 and 21 · Spring Boot · Spring Cloud · Apache Kafka · PostgreSQL 16 · Keycloak · Angular 17–22 ·
+      TypeScript · Python · FastAPI · FAISS · Docker · Git
+    </p>
+    <p class="project-what">
+      Across the six projects: Spring Boot services on Java 17 and 21, Spring Cloud with Kafka and a
+      transactional outbox, and PostgreSQL with Flyway migrations and partitioned tables. Keycloak
+      provides federated identity, the front ends are Angular 17 and 22, and Python covers
+      retrieval and static analysis.
+    </p>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Living Codebase Cartographer · Shreyash Sharma</title>
+<meta name="description" content="An offline codebase mapper: symbols, call graphs, data lineage and blast-radius impact — every fact carrying its evidence and confidence.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Living Codebase Cartographer · Shreyash Sharma">
+<meta property="og:description" content="An offline codebase mapper: symbols, call graphs, data lineage and blast-radius impact — every fact carrying its evidence and confidence.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Living Codebase Cartographer · Shreyash Sharma">
+<meta name="twitter:description" content="An offline codebase mapper: symbols, call graphs, data lineage and blast-radius impact — every fact carrying its evidence and confidence.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash Sharma</a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html" aria-current="page">Work</a>
+      <a href="about.html">About</a>
+      <a href="notes.html">Notes</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="crumbs"><a href="work.html">← All work</a></p>
+    <p class="eyebrow">Offline code analysis</p>
+    <h1 class="page-title">Living Codebase Cartographer</h1>
+    <p class="page-sub">
+      An offline codebase mapper. Point it at any repository and it produces symbols,
+      endpoints, call graphs, data lineage, blast-radius impact analysis and request-flow
+      traces — each fact carrying evidence and a confidence level — then renders the result
+      as a portable HTML explorer that opens from the filesystem.
+    </p>
+  </div>
+
+  <p class="project-what" style="margin-top:14px;">
+      <b>In plain terms:</b> Point it at unfamiliar code and it produces a map: what calls what, where the data goes, and what breaks if you change something.
+    </p>
+
+  <section class="entry" aria-label="Status and actions">
+    <p class="entry-line">
+      Implemented and MIT licensed. It runs offline with the Python standard library only,
+      and every map it writes is human-readable Markdown alongside machine-readable JSON.
+      Four repositories have been mapped so far; the figures are in
+      <a href="#maps">What it maps</a> below.
+    </p>
+    <div class="entry-actions">
+      <a class="btn btn-primary" href="https://shreyash-cartographer.tailae7ebb.ts.net" target="_blank" rel="noopener">Open the live demo</a>
+      <a class="btn btn-ghost" href="https://github.com/shreyash-sharma-byte/living-codebase-cartographer" target="_blank" rel="noopener">Repository</a>
+    </div>
+    <p class="entry-fine">On a fixed address — self-hosted, so it is up whenever the machine is running. Each explorer is self-contained and opens from the filesystem; the small landing page that links the four together is the part that needs a server.</p>
+  </section>
+
+  <section class="section" aria-labelledby="what">
+    <h2 class="section-title" id="what">What it does</h2>
+    <p class="project-what">
+      Understanding an unfamiliar codebase normally means either a cloud code-intelligence
+      service or a language server. This does it offline with the Python standard library
+      only: no third-party packages, no language server, no network calls, no telemetry.
+    </p>
+    <p class="project-what">
+      It walks a target repository, detects the stack from manifests and file content,
+      dispatches a per-file analyzer, and writes one graph of nodes and edges. From that
+      graph it answers questions about the code and renders an explorer a person can open
+      and browse.
+    </p>
+
+    <div class="caps mt-16">
+
+      <div class="caps-group">
+        <h3 class="section-title text-muted">Commands</h3>
+        <div class="kv">
+          <div class="kv-row">
+            <span class="kv-key">init</span>
+            <span class="kv-val">Build a map of a repository.</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">sync</span>
+            <span class="kv-val">Incremental update of an existing map.</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">status</span>
+            <span class="kv-val">Report how fresh the map is.</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">validate</span>
+            <span class="kv-val">Check integrity and schema conformance.</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">detect</span>
+            <span class="kv-val">An evidence-based stack report.</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">query</span>
+            <span class="kv-val">Look up facts by kind, name, language or limit.</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">impact</span>
+            <span class="kv-val">Reverse-reachability blast radius for a symbol.</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">flow</span>
+            <span class="kv-val">Trace a path from one symbol to another.</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">visualize</span>
+            <span class="kv-val">Render the explorer, with modes for kind, symbol, impact or flow, a depth control, and an option to serve it.</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">intent import, intent bind</span>
+            <span class="kv-val">The intent layer.</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">why, responsible-for</span>
+            <span class="kv-val">Two further queries.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="caps-group">
+        <h3 class="section-title text-muted">Languages</h3>
+        <ul class="caps-list">
+          <li>Java, TypeScript and JavaScript, Python, Go, C#, Rust, SQL DDL, and generic configuration, manifests and CI files.</li>
+          <li>Anything else gets a low-confidence fallback pass rather than being skipped silently.</li>
+        </ul>
+      </div>
+
+      <div class="caps-group">
+        <h3 class="section-title text-muted">Two ways to use it</h3>
+        <ul class="caps-list">
+          <li><b>A standalone command-line tool.</b> The commands above, run against a repository on disk.</li>
+          <li><b>An AI-agent skill.</b> The same capabilities exposed as thirteen named operations an agent can call.</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="arch">
+    <h2 class="section-title" id="arch">Architecture</h2>
+    <p class="pre-cap">From target repository to artifacts</p>
+    <pre class="pre">target repository
+  |  gitignore-aware walk; skips build output;
+  |  never reads .env
+  v
+inventory + change detection
+  |  git when available, else file hashes
+  v
+evidence-based stack detection
+  |  manifests + file content
+  v
+per-file analyzer dispatch
+  |  java | typescript | python | go | csharp
+  |  rust | sql | config | fallback
+  v
+closed schema
+  |  51 node kinds, 35 edge types,
+  |  confidence levels
+  v
+graph.json  --  the single source of truth
+  |--&gt; Markdown views (architecture, api-map,
+  |    call graph, data flow, database, ...)
+  `--&gt; HTML explorer (read-only projection)</pre>
+    <p class="project-what mt-16">
+      The schema is closed deliberately. Technology identity such as language or framework
+      goes into node metadata, never into the set of node kinds, so the vocabulary cannot
+      sprawl.
+    </p>
+    <p class="hint mt-8">
+      The walk is gitignore-aware and skips build output; it never reads a
+      <span class="num">.env</span> file.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="evidence">
+    <h2 class="section-title" id="evidence">Evidence and confidence</h2>
+    <p class="project-what">
+      This is the differentiator: no fact is stated without its evidence. Every node and
+      every edge carries evidence saying whether it was derived from source code or asserted
+      by a person or an agent, and every fact carries a file and line citation together with
+      the commit it was last verified against.
+    </p>
+    <div class="kv mt-16">
+      <div class="kv-row">
+        <span class="kv-key">High</span>
+        <span class="kv-val">A direct declaration in the source.</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">Medium</span>
+        <span class="kv-val">A reference resolved by name.</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">Low</span>
+        <span class="kv-val">A heuristic or ambiguous match.</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">Without evidence</span>
+        <span class="kv-val">An assertion made without evidence. It is carried as its own level rather than folded into the three above.</span>
+      </div>
+    </div>
+    <p class="project-what mt-16">
+      Confidence is consumed downstream rather than used as decoration. An impact query prints
+      each caller and callee with its confidence. The explorer draws high confidence as a solid
+      line, medium lighter and low dashed, and filters the low and unverified facts out by
+      default — with per-level counts available when you want them.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="maps">
+    <h2 class="section-title" id="maps">What it maps</h2>
+    <div class="table-wrap">
+      <table>
+        <caption>Four repositories mapped by the tool itself</caption>
+        <thead>
+          <tr><th scope="col">Codebase</th><th scope="col" class="num">Files</th><th scope="col" class="num">Nodes</th><th scope="col" class="num">Edges</th><th scope="col" class="num">Flow candidates</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>OpenClaimFlow</td><td class="num">373</td><td class="num">2,710</td><td class="num">9,008</td><td class="num">87</td></tr>
+          <tr><td>Workflow Management System</td><td class="num">104</td><td class="num">650</td><td class="num">1,327</td><td class="num">17</td></tr>
+          <tr><td>Banking Microservices</td><td class="num">89</td><td class="num">492</td><td class="num">1,568</td><td class="num">39</td></tr>
+          <tr><td>ClaimShield AI</td><td class="num">40</td><td class="num">184</td><td class="num">430</td><td class="num">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="project-what mt-16">
+      The tool produced these four maps, so its own output is the evidence that it works —
+      no figure in that table was typed in by hand. The nodes column counts file nodes as
+      well as code symbols, which is why it is labelled nodes and not symbols.
+    </p>
+    <p class="project-what mt-16">
+      Two honest qualifications on that table. The OpenClaimFlow row is whole-directory scope:
+      that map's root also contained a nested copy of a different project, 45 files and 195
+      nodes of it, so the row is not OpenClaimFlow alone.
+    </p>
+    <p class="project-what">
+      And the tool records how sure it is about every fact, which these totals hide. In the
+      claims map, 1,800 of the 9,008 edges are low-confidence, 260 facts are unresolved, and
+      111 files were walked without any analyzer claiming a symbol in them. The explorer shows
+      and filters all of that; the summary table cannot.
+    </p>
+    <p class="project-what mt-16">
+      A self-measurement has not been done: the tool has never been pointed at itself, so it
+      has no files, nodes or edges of its own to quote here. What has been measured is its
+      source.
+    </p>
+    <div class="table-wrap mt-16">
+      <table>
+        <caption>The tool's own source, measured locally</caption>
+        <thead><tr><th scope="col">Metric</th><th scope="col" class="num">Value</th></tr></thead>
+        <tbody>
+          <tr><td>Python modules</td><td class="num">16</td></tr>
+          <tr><td>Lines of tool code</td><td class="num">7,837</td></tr>
+          <tr><td>Lines of tests</td><td class="num">2,556</td></tr>
+          <tr><td>Test checks, all passing</td><td class="num">428</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint mt-8">
+      The 428 checks are 298 analysis checks and 130 visualization checks, all passing. The
+      repository's README quotes older figures for both suites, 289 and 130; 428 is what was
+      measured locally.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="artifacts">
+    <h2 class="section-title" id="artifacts">Artifacts it produces</h2>
+    <ul class="caps-list">
+      <li><b>graph.json</b> — the source of truth: nodes, edges, evidence, confidence, flow candidates, unresolved and unclaimed files, detected stack, and sync state.</li>
+      <li><b>stack.md, modules.md, symbols.md</b> — the detected stack with a confidence per item, plus the module and symbol inventories.</li>
+      <li><b>dependencies.md, call-graph.md, data-flow.md</b> — imports and injections; call and handler edges; read, write and query lineage.</li>
+      <li><b>api-map.md, database.md, external-services.md</b> — endpoints with their handlers; tables, views, migrations, sequences and procedures; external services and their callers.</li>
+      <li><b>authentication.md, configuration.md, deployment.md</b> — auth guards, configuration keys and environment variables, deployment units and CI jobs.</li>
+      <li><b>architecture.md</b> — the file a curated summary belongs in. It is written once and never overwritten by a later sync, but in all four maps produced so far it is still an empty template waiting to be filled in.</li>
+      <li><b>business-flows/</b> — generated flow candidates. In the four maps produced so far these remain candidates; no curated flow has been written yet.</li>
+      <li><b>state/</b> — freshness and incremental-sync state.</li>
+      <li><b>visualization/</b> — the explorer: an HTML file plus its data.</li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="explorer">
+    <h2 class="section-title" id="explorer">The explorer</h2>
+    <p class="project-what">
+      Each map renders to a read-only projection of the graph that a person can open and
+      browse without a server.
+    </p>
+    <ul class="caps-list mt-16">
+      <li><b>Nine views.</b> Overview, endpoints, data, dependencies, symbols, flows, capabilities, graph and issues.</li>
+      <li><b>Nine graph modes.</b> Architecture, dependency, call graph, data flow, API, database, external services, impact and flow.</li>
+      <li><b>Reading it.</b> Pan and zoom; click a node for an inspector showing its metadata, a source citation and its incoming and outgoing relations grouped by type; search across name, kind, file, endpoint and language; filter by confidence, relationship type, node kind, language and focus depth; copy as CSV or Markdown; export SVG; and deep links that address a specific node, mode, view, impact analysis, endpoint, edge or depth.</li>
+      <li><b>Self-contained.</b> The styles and scripts are inline, there are no network calls at all, and the graph is injected as a script rather than fetched — which is what lets it open directly from the filesystem.</li>
+      <li><b>Rendering is capped so a large repository stays usable.</b> 300 nodes are drawn at once, with a notice showing how many of the total are shown; 3,000 symbol rows; 400 nodes and 1,200 edges per graph mode; 60 architecture groups; and 120 nodes in a focused impact or flow view.</li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="lim">
+    <h2 class="section-title" id="lim">Known limitations</h2>
+    <div class="alert">
+      <b>The tool has not been pointed at itself.</b>
+      Its own code has not been measured, so this page quotes no file, node or edge count for
+      the Cartographer itself — only the line, module and test figures above, which were
+      counted locally.
+    </div>
+    <ul class="caps-list mt-16">
+      <li><b>Curated records are not existing output.</b> In the four maps produced so far, the curated decisions and changes directories are empty and the flows directory holds only generated candidates. Nothing has been curated yet.</li>
+      <li><b>No plugin or hook system.</b> Extending the tool means adding an analyzer module to a static registry.</li>
+      <li><b>The landing page needs a server.</b> The four explorers are each self-contained, but the small landing page that links them together uses absolute paths and therefore needs a web server rather than the filesystem.</li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="shots">
+    <h2 class="section-title" id="shots">Screenshots</h2>
+    <p class="hint">The generated explorer first, then the landing page that links the maps. The landing page's file counts read higher than the table above, and the difference is real rather than a mistake. That page counts every file walked, including files no analyzer claimed a symbol in; the table counts file nodes recorded in the graph.</p>
+    <div class="shots">
+      <figure class="shot">
+        <img src="assets/shots/cartographer-explorer-1440.png" alt="The generated explorer's overview for the claims map, showing 2,710 nodes, 9,008 relationships and the confidence filter panel" width="1440" height="900" loading="lazy">
+        <figcaption>The explorer's overview for one map: node and edge totals, the detected stack, counts by kind, and the confidence filters down the left. It is a single self-contained page with no network calls.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/landing-cartographer-1280.png" alt="Cartographer landing page explaining the offline mapper and listing the maps it produced" width="1280" height="900" loading="lazy">
+        <figcaption>The landing page, which links the maps the tool has produced.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/landing-cartographer-390.png" alt="The same Cartographer landing page at phone width, with the map entries stacked in one column" width="390" height="844" loading="lazy">
+        <figcaption>The same page at phone width, with the map entries stacked.</figcaption>
+      </figure>
+    </div>
+    <p class="hint mt-16">
+      There is no screenshot of the command-line output.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="src">
+    <h2 class="section-title" id="src">Source</h2>
+    <div class="project-foot">
+      <a href="https://github.com/shreyash-sharma-byte/living-codebase-cartographer" target="_blank" rel="noopener">living-codebase-cartographer</a>
+      <a href="index.html">All projects</a>
+    </div>
+    <p class="hint mt-8">
+      MIT licensed, default branch <span class="num">main</span>.
+      <a href="mailto:shreyashms2501@gmail.com?subject=Cartographer%20demo%20URL">Ask for the live demo</a>
+      if you want the current tunnel address for the hosted maps.
+    </p>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

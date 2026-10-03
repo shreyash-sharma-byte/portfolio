@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Engineering notes · Shreyash Sharma</title>
+<meta name="description" content="Seven engineering write-ups on what broke, what the measurements said, and the two results that contradicted the estimate I started with.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Engineering notes · Shreyash Sharma">
+<meta property="og:description" content="Seven engineering write-ups on what broke, what the measurements said, and the two results that contradicted the estimate I started with.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Engineering notes · Shreyash Sharma">
+<meta name="twitter:description" content="Seven engineering write-ups on what broke, what the measurements said, and the two results that contradicted the estimate I started with.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash Sharma</a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html">Work</a>
+      <a href="about.html">About</a>
+      <a href="notes.html" aria-current="page">Notes</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="eyebrow">Engineering notes</p>
+    <h1 class="page-title">Measured, not guessed</h1>
+    <p class="page-sub">
+      Seven things that broke, and what the numbers said when I actually measured them.
+      Two of these contradicted the estimate I started with — the honest result is the
+      more useful one, so it is the one written down here. Everything below was
+      observed on the machine that serves these projects.
+    </p>
+  </div>
+
+  <section class="section" aria-labelledby="n1">
+    <p class="note-meta">Layout · flexbox</p>
+    <h2 class="note-title" id="n1">A 784px column inside a 390px viewport</h2>
+    <div class="note-body">
+      <p>
+        The signed-in shell is a sidebar and a main column in a flex row. On a phone it
+        scrolled sideways. The cause was one missing declaration: the main column was
+        <code>flex: 1</code> <b>without <code>min-width: 0</code></b>. A flex item's
+        default <code>min-width</code> is <code>auto</code>, which means it cannot shrink
+        below its content's intrinsic width — so wide children (a nowrap table, a filter
+        bar) sized the column itself, and every descendant inherited the overflow.
+      </p>
+      <p>
+        Measured, the main column computed <b>784px wide inside a 390px viewport</b>.
+      </p>
+      <p>
+        The instructive part is the first fix attempt. Per-component media queries were
+        added to the widest children; it compiled cleanly, every string check passed, and
+        nothing changed — because the column was sized by its content, not by the
+        components inside it. The fix had to be structural: constrain the flex item, then
+        let children shrink. Verified numerically rather than visually —
+        <span class="num">scrollWidth</span> went from <span class="num">784</span> to
+        <span class="num">390</span> on four routes, with zero elements extending past
+        the viewport.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="n2">
+    <p class="note-meta">JVM · memory</p>
+    <h2 class="note-title" id="n2">JVM tuning that was measured, not guessed</h2>
+    <div class="note-body">
+      <p>
+        Nine Spring services and a Kafka broker were running with
+        <code>-Xms256m -Xmx1g</code>, inherited from a container template. Observed live
+        sets were 94–170 MB, so the 1 GB ceiling bought nothing — but it did make the
+        collector lazy, which is how a Java service's RSS climbs quietly over hours.
+      </p>
+      <p>
+        What replaced it, per service:
+      </p>
+    </div>
+    <pre class="pre">-Xms128m -Xmx384m -XX:MaxMetaspaceSize=256m
+-XX:ReservedCodeCacheSize=96m -XX:+UseSerialGC</pre>
+    <div class="note-body mt-16">
+      <p>
+        Kafka got the same treatment through its own environment variable, because the
+        image default is <code>-Xms1G -Xmx1G</code> — a gigabyte committed for a broker
+        holding a handful of demo messages. It now runs
+        <code>-Xms256m -Xmx512m</code>.
+      </p>
+      <p>
+        <b>Results.</b> Committed heap per service fell from 256 MB to about 123 MB.
+        Across the ten retuned JVMs, RSS went from 5,181 MB to 3,719 MB — roughly
+        <b>1.4 GB</b>. Whole-machine JVM footprint went from 7,344 MB to about 5,890 MB
+        across 15–16 JVMs.
+      </p>
+      <p>
+        <b>The caveat, stated plainly.</b> The "before" column was measured on services
+        warmed up for 20–40 minutes; the "after" column about 10 minutes after a restart.
+        Some of that delta is therefore warm-versus-cold, not flags. The part that is
+        attributable to the flags is mechanistic and solid — committed heap dropping from
+        256 MB to ~123 MB is <code>-Xms</code> alone, plus SerialGC's saved threads and
+        collector structures.
+      </p>
+      <p>
+        <b>What was deliberately left alone</b> matters as much: <code>-Xss512k</code>
+        (thread stacks are reserved, not resident — the real saving is a few MB against a
+        real <code>StackOverflowError</code> risk), <code>-XX:MaxDirectMemorySize</code>
+        (the gateway is Reactor Netty and does its I/O through direct buffers),
+        <code>-XX:TieredStopAtLevel=1</code> (right for batch jobs, 2–5× slower at peak
+        throughput), and ZGC/G1 (both cost more than SerialGC at this heap size).
+      </p>
+      <p class="hint">
+        Three traps in reading these numbers: committed is not resident (ZooKeeper runs a
+        512 MB committed heap at ~117 MB RSS); warm is not cold; and snapshot totals move
+        on their own, because a container healthcheck that shells out to
+        <span class="num">kafka-broker-api-versions</span> starts a fresh JVM on every run.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="n3">
+    <p class="note-meta">Infrastructure · the result that contradicted the estimate</p>
+    <h2 class="note-title" id="n3">The consolidation that saved 38 MB, not 150</h2>
+    <div class="note-body">
+      <p>
+        Seven per-project Postgres containers were merged into one shared instance. The
+        estimate was 100–150 MB. The measurement was <b>~38 MB</b>.
+      </p>
+      <p>
+        The estimate was wrong for a good reason: Postgres's per-<i>instance</i> overhead
+        is small, and connection backends dominate the footprint. Seven idle servers do
+        not cost seven times one server.
+      </p>
+      <p>
+        The consolidation was kept anyway, on operational grounds rather than memory:
+        one backup target, one connection point, and the next project needs no new
+        database server at all. Publishing the honest number next to the decision is a
+        better signal than a fabricated win.
+      </p>
+      <p>
+        Two related decisions came out of the same exercise. First, <b>separate databases
+        rather than separate schemas</b> inside the shared server — the database name is
+        what every application already specifies, so connection strings change only in
+        host and port; isolation is enforced by Postgres rather than by convention; and it
+        avoids the shared <code>public</code> schema, extension collisions and migration
+        tools that assume they own the database.
+      </p>
+      <p>
+        Second, and more importantly, <b>what was not consolidated.</b> Collapsing all the
+        Spring services into one JVM was superficially attractive — several Spring Boot
+        apps can share a runtime, each with its own port and datasource, and the module
+        structure survives. What does not survive is independent deployability: no
+        independent restart, no fault isolation, one heap for every service, one classpath
+        for every dependency, and process-global state fighting you through system
+        properties, static initialisers and shutdown hooks. That produces a modular
+        monolith — respectable, but a different architecture, and it would have made the
+        repository's own description false. Estimated saving: ~2.1 GB, permanently trading
+        the thing the project exists to demonstrate. Rejected.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="n4">
+    <p class="note-meta">Identity · the issuer is the hard part</p>
+    <h2 class="note-title" id="n4">One identity provider, two realms, two origins</h2>
+    <div class="note-body">
+      <p>
+        Two applications each ran their own Keycloak. That looked necessary, because each
+        realm's issuer has to equal the origin the browser actually used, and the two apps
+        are reached on different hostnames. Keycloak builds the issuer from the origin it
+        believes it is served on:
+        <code>https://&lt;host&gt;/realms/&lt;realm&gt;</code>. A resource server does not
+        merely verify the signature — it checks that the token's <code>iss</code> claim
+        equals its configured issuer character for character.
+      </p>
+      <p>
+        The naive knob, <code>KC_HOSTNAME</code>, is global: one value for the whole
+        server. Set it to one app's hostname and the other app's redirects point at the
+        wrong place. Leave it unset under <code>start-dev</code> and Keycloak advertises
+        <code>localhost</code>, which no remote browser can reach.
+      </p>
+      <p>
+        The mechanism that makes it work is a <b>per-realm</b> attribute that outranks the
+        global hostname. Keycloak resolves the origin it advertises in this order:
+      </p>
+    </div>
+    <pre class="pre">1st  realm frontendUrl
+2nd  global KC_HOSTNAME
+3rd  request Host header</pre>
+    <div class="note-body mt-16">
+      <p>
+        <b>Verify it, don't trust it.</b> The decisive test asks with no <code>Host</code>
+        header at all, so nothing request-derived can be involved — only realm data can
+        produce the answer. Two different public origins from two discovery documents on
+        one port is proof. Discovery documents prove <i>advertising</i> though, not login,
+        so the end-to-end check was a real authorization-code flow: PKCE verifier,
+        POST the credentials, read <code>?code=</code> out of the 302, exchange it, decode
+        the access token, and then call the API with it. A 401 there means the issuer did
+        not match; a 200 means the resource server validated a token minted by the shared
+        instance.
+      </p>
+      <p>
+        <b>838 MB saved</b> — 631 MB for one instance against 784 MB + 685 MB for two.
+        That is the largest single memory win after the JVM retune, and unlike most of the
+        others it is justified on memory alone.
+      </p>
+      <p>
+        The second half of the problem is redirect URIs, which rotate with the tunnel
+        hostname. Updating the issuer but not the client's registered redirect URIs fails
+        in the browser with <span class="num">HTTP 400 Invalid parameter: redirect_uri</span>
+        — while every <code>curl</code> check still passes, because curl never follows the
+        browser's path. Both are now written together, per realm, from one script.
+      </p>
+      <p class="hint">
+        The importer is filename-sensitive: a realm named <span class="num">workflow-realm</span>
+        must live in <span class="num">workflow-realm-realm.json</span>. And a realm export
+        is not a deployment manifest — exports capture what was configured when they were
+        written, so the deploy origin has to be applied at deploy time.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="n5">
+    <p class="note-meta">Database · a time bomb with a date on it</p>
+    <h2 class="note-title" id="n5">The partition that expired on the first of the month</h2>
+    <div class="note-body">
+      <p>
+        Two tables were range-partitioned by timestamp with exactly one hardcoded
+        partition each — the month the project was written. While the calendar sat inside
+        that month, everything worked. Once it moved past it, every insert had nowhere to
+        go and failed.
+      </p>
+      <p>
+        The failure mode is what made it interesting. It surfaced as a
+        <span class="num">500</span> on account creation and on <i>every transfer</i> —
+        because the audit row is written in the same transaction as the transfer. A
+        partitioning detail in one table took down an unrelated user-facing flow.
+      </p>
+      <p>
+        Fixed with a rolling window of monthly partitions plus a <code>DEFAULT</code>
+        catch-all on each table, so an unroutable row is now impossible rather than
+        merely unlikely. Concrete months are still created ahead of time by a script on a
+        monthly timer, because they are what makes old partitions cheap to prune.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="n6">
+    <p class="note-meta">Networking · an allow-list that could never match</p>
+    <h2 class="note-title" id="n6">A CORS rule that could never work</h2>
+    <div class="note-body">
+      <p>
+        The API gateway's CORS allow-list named only <code>localhost:4200</code> and
+        <code>localhost:4201</code>. The demo is reached through a tunnel whose hostname
+        changes on every restart, so no fixed list could ever contain it.
+      </p>
+      <p>
+        The confusing part is the asymmetry it produced. Browsers send an
+        <code>Origin</code> header even on same-origin POSTs, so logins failed with
+        <span class="num">403</span> in the browser — while the same request from
+        <code>curl</code>, which sends no <code>Origin</code> at all, succeeded. One
+        request, two verdicts, depending only on who sent it.
+      </p>
+      <p>
+        The durable fix is a pattern-based allow-list with an environment override
+        (<code>allowedOriginPatterns</code>), so any localhost port works out of the box
+        and a deployment sets its own origin. The verification matters more than the
+        change: an allowed origin gets <span class="num">200</span> and an unlisted one
+        still gets <span class="num">403</span> — the policy was made workable, not made
+        permissive.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="n7">
+    <p class="note-meta">Process · keeping the public repos honest</p>
+    <h2 class="note-title" id="n7">Deploying without touching the source repositories</h2>
+    <div class="note-body">
+      <p>
+        Serving a project usually means editing it — a build path, an origin, a config
+        flag — and those edits end up in the public repository as noise, or worse, as a
+        deployment concern that leaks into a codebase someone else is reading.
+      </p>
+      <p>
+        Here the deployment wiring lives in separate clones, kept as re-appliable patches,
+        and the originals stay byte-identical to their last commit —
+        <code>git status</code> in them reports nothing. The build scripts read only from
+        the clones. So a rebuild cannot re-introduce wiring into a project repository, and
+        a change in a project repository cannot silently un-patch what is being served.
+      </p>
+      <p>
+        The wiring itself is deliberately the smallest change that makes a frontend
+        deployable: read the API origin at runtime from a global the edge injects, instead
+        of compiling a default in. Everything else — units, containers, proxying — lives
+        outside the projects entirely.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="smaller">
+    <h2 class="section-title" id="smaller">Smaller traps worth writing down</h2>
+    <ul class="caps-list mt-8">
+      <li><b>A single-file bind-mount serves a stale inode.</b> Editing a config on the host and reloading inside the container changed nothing — the mount still pointed at the old file, and <span class="num">nginx -t</span> happily validated it, which is the tell that you are testing the wrong thing. Mount the directory, or recreate the container.</li>
+      <li><b><span class="num">docker compose up</span> resurrects what you retired.</b> Both <span class="num">depends_on</span> and a start script with no service arguments will pull a removed dependency back up. Retired services now sit behind a non-default profile, invisible to a plain <span class="num">up -d</span>.</li>
+      <li><b>A container restart does not re-read <span class="num">env_file</span>.</b> Only a recreate picks up changes. This bit twice, through a Django <span class="num">ALLOWED_HOSTS</span> setting.</li>
+      <li><b>Angular's emulated encapsulation does not protect a component from global selectors.</b> A landing page reused <span class="num">class="steps"</span>; the app's global stylesheet already had <span class="num">.steps li { display: flex }</span> for its own stepper, and every text run in the list became a separate flex item. It compiled cleanly and every string check passed. Namespace the classes you introduce.</li>
+      <li><b>Write the string before you open the file.</b> <span class="num">open(path, "w").write(&lt;expression that raises&gt;)</span> truncates the file the instant <span class="num">open()</span> is called, because the argument is evaluated afterwards. A formatting error silently emptied an 8,828-byte stylesheet.</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

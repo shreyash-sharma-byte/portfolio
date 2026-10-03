@@ -1,0 +1,9 @@
+{
+  "_comment": "Live demo addresses. All five are now Tailscale Funnel behind stable per-app node hostnames under shreyash-*.tailae7ebb.ts.net — these addresses do NOT rotate. One Tailscale node per app (systemd template tailscaled-node@.service), each Funnel on 443, so every app owns the root of its own hostname: no path prefixes, no base-href changes, no /api collisions. NOTE when adding a node: a Funnel created immediately after the node authenticates never gets its public A record published — reset the funnel and re-add it (tailscale --socket=/run/tailscale-nodes/<name>.sock funnel reset, then funnel --bg <port>) and the record appears within ~5 minutes. After editing, run: python3 tools/set_live_urls.py — that rewrites every project page in one pass. Leave a value empty and that project's page asks the visitor for the URL instead of linking a dead address.",
+  "claims": "https://shreyash-claims.tailae7ebb.ts.net",
+  "workflow": "https://shreyash-workflow.tailae7ebb.ts.net",
+  "banking": "https://shreyash-banking.tailae7ebb.ts.net",
+  "cartographer": "https://shreyash-cartographer.tailae7ebb.ts.net",
+  "claimshield": "https://shreyash-claimshield.tailae7ebb.ts.net",
+  "michiru": ""
+}

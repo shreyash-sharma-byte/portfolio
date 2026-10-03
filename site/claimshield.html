@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClaimShield AI · Shreyash Sharma</title>
+<meta name="description" content="A retrieval-augmented policy service: answers that cite the clauses they used, a confidence score, and a refusal path when the evidence is too weak.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ClaimShield AI · Shreyash Sharma">
+<meta property="og:description" content="A retrieval-augmented policy service: answers that cite the clauses they used, a confidence score, and a refusal path when the evidence is too weak.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ClaimShield AI · Shreyash Sharma">
+<meta name="twitter:description" content="A retrieval-augmented policy service: answers that cite the clauses they used, a confidence score, and a refusal path when the evidence is too weak.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash Sharma</a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html" aria-current="page">Work</a>
+      <a href="about.html">About</a>
+      <a href="notes.html">Notes</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="crumbs"><a href="work.html">← All work</a></p>
+    <p class="eyebrow">Applied retrieval</p>
+    <h1 class="page-title">ClaimShield AI</h1>
+    <p class="page-sub">
+      A retrieval-augmented policy service. It indexes policy clauses into a vector store,
+      retrieves and re-ranks the clauses relevant to a question, and answers only from what
+      it retrieved — with citations and a confidence score — plus a local harness that scores
+      the retriever itself. Built around one question: can this coverage answer be trusted?
+      Every answer names the clauses behind it and carries a measurable confidence, and the
+      retriever itself is scored offline rather than taken on trust.
+    </p>
+  </div>
+
+  <p class="project-what" style="margin-top:14px;">
+      <b>In plain terms:</b> Ask a question about a policy document and get an answer that quotes the clauses it used — or tells you it could not find enough to answer.
+    </p>
+
+  <section class="entry" aria-label="Status and actions">
+    <p class="entry-line">
+      Working, over a real corpus: 93 policy clauses indexed in a FAISS index, retrieved and
+      re-ranked per question, then answered with the clauses that support the answer named
+      in the response. When retrieval does not clear the confidence floor, no answer is
+      produced at all.
+    </p>
+    <div class="entry-actions">
+      <a class="btn btn-primary" href="https://shreyash-claimshield.tailae7ebb.ts.net" target="_blank" rel="noopener">Open the live demo</a>
+      <a class="btn btn-ghost" href="https://github.com/shreyash-sharma-byte/claimshield-ai" target="_blank" rel="noopener">Repository</a>
+    </div>
+    <p class="entry-fine">On a fixed address — self-hosted, so it is up whenever the machine is running. There is no sign-in: the console shows the allowance left for your address itself.</p>
+  </section>
+
+  <section class="section" aria-labelledby="arch">
+    <h2 class="section-title" id="arch">Architecture</h2>
+    <p class="project-what mt-8">
+      Python and FastAPI. FAISS holds the clause index with exact L2 search over
+      384-dimensional vectors. A small sentence-transformer model produces the embeddings and
+      a cross-encoder model does the re-ranking. Model inference goes through the Groq SDK
+      over the OpenAI wire format.
+    </p>
+    <p class="pre-cap mt-24">The pipeline, end to end</p>
+    <pre class="pre">question
+  |
+  v
+retrieve clause chunks  FAISS exact L2, 384-dim
+  |
+  v
+re-rank chunks          cross-encoder model
+  |
+  v
+keep best per policy    (comparison only)
+  |
+  v
+adaptive top-k          floor 0.45, max 8 chunks
+  |
+  v
+build numbered context  [Source N | file]
+  |
+  v
+call the model          single choke point
+  |
+  v
+answer + sources + evidence + confidence</pre>
+    <p class="hint mt-8">
+      The model call is the single choke point: every model call passes through it, and that
+      is where the per-address allowance is charged. A separate evaluation endpoint runs the
+      retrieval stages only and calls no model at all.
+    </p>
+
+    <p class="pre-cap mt-24">Asking a policy question, in order</p>
+    <ol class="flow">
+      <li>The question arrives at the search endpoint, <span class="num">POST /search-policy</span>.</li>
+      <li>The question is embedded by a small sentence-transformer model and matched against the clause index by <b>exact L2 search</b> over 384-dimensional vectors.</li>
+      <li>The retrieved chunks are re-ranked by a <b>cross-encoder model</b>. It is more accurate than vector distance alone, which is why it sits here rather than replacing retrieval.</li>
+      <li>The number of chunks kept is <b>adaptive</b>: it follows how good the matches are, bounded by a confidence floor of <span class="num">0.45</span> and a ceiling of <span class="num">8</span> chunks.</li>
+      <li>The retained clauses are formatted into numbered context blocks that name their source file and carry benefit, coverage, limit and waiting-period metadata.</li>
+      <li>The prompt requires the model to cite sources by number, and to reply with a fixed sentence when the documents do not contain the answer.</li>
+      <li>This is the single point every model call passes through, and it is where the per-address allowance is charged.</li>
+      <li>The response returns the answer, the distinct source files, up to six evidence records naming clause, source and confidence, and an overall confidence.</li>
+    </ol>
+  </section>
+
+  <section class="section" aria-labelledby="ground">
+    <h2 class="section-title" id="ground">How an answer is grounded</h2>
+    <ul class="caps-list">
+      <li><b>Citations.</b> The context is built as numbered blocks, each naming its source file and its clause metadata. The prompt requires the answer to cite them by number. The response returns the distinct source files and the individual evidence records behind the answer, so a claim in the answer can be traced back to the clause it came from.</li>
+      <li><b>Confidence from retrieval distance.</b> It is computed as one over one plus the retrieval distance, averaged over the top six chunks. Stated plainly: this is a retrieval confidence derived from distance. It is <b>not</b> a calibrated probability, and it is not self-reported by the model.</li>
+      <li><b>Refusal rather than a guess.</b> Below a fixed floor the service does not call the model at all and returns "not enough evidence found in policy documents". That is the design decision worth highlighting: the system declines to answer instead of inventing one from weak context.</li>
+      <li><b>Evaluation of the retriever itself.</b> A local harness scores section-match accuracy against a similarity threshold, lexical and semantic answer accuracy, top-one accuracy, mean reciprocal rank, and coverage polarity with a four-by-four confusion matrix. It runs against a fixed set of 29 questions and costs nothing, because it never calls a model.</li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="allow">
+    <h2 class="section-title" id="allow">The allowance</h2>
+    <p class="project-what mt-8">
+      The public console gives each address a small allowance of <b>model calls</b>. The
+      current deployment sets it to <span class="num">10</span>.
+    </p>
+    <p class="project-what">
+      It is charged at the single choke point that every model call passes through, so it
+      counts model calls, not HTTP requests.
+    </p>
+    <p class="pre-cap mt-24">What one action costs</p>
+    <div class="kv">
+      <div class="kv-row">
+        <span class="kv-key">One policy search</span>
+        <span class="kv-val">One model call.</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">A policy comparison</span>
+        <span class="kv-val">One extraction per retained clause plus one verdict — three calls on the current two-policy corpus.</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">The retrieval evaluation</span>
+        <span class="kv-val">No model call. It is local embeddings and classifiers.</span>
+      </div>
+    </div>
+    <p class="project-what mt-16">
+      When the allowance is spent the API answers <span class="num">429</span> and the console
+      offers a founder-secret unlock. The secret is compared server-side only and is never
+      sent to the browser, so it cannot be read from the page. Failed attempts are throttled
+      at five per address, followed by a five-minute cool-off.
+    </p>
+    <div class="alert mt-24">
+      <b>The counters are held in memory, so a restart resets every address.</b>
+      The allowance is a per-address limit on spending, and the code that implements it is not
+      committed to the public repository — it cannot be read there.
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="met">
+    <h2 class="section-title" id="met">Verified metrics</h2>
+    <div class="table-wrap mt-16">
+      <table>
+        <caption>Measured from the source and the running service</caption>
+        <thead><tr><th scope="col">Metric</th><th scope="col" class="num">Value</th></tr></thead>
+        <tbody>
+          <tr><td>Files mapped</td><td class="num">40</td></tr>
+          <tr><td>Graph nodes</td><td class="num">184</td></tr>
+          <tr><td>Edges</td><td class="num">430</td></tr>
+          <tr><td>Endpoints</td><td class="num">5</td></tr>
+          <tr><td>Indexed policy clauses</td><td class="num">93</td></tr>
+          <tr><td>Evaluation questions</td><td class="num">29</td></tr>
+          <tr><td>Flow candidates</td><td class="num">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint mt-8">
+      The 93 clauses are 56 individual clauses and 37 group clauses. The five endpoints are
+      <span class="num">POST /search-policy</span>, <span class="num">POST /compare-policies</span>,
+      <span class="num">POST /evaluate-retrieval</span>, <span class="num">GET /quota</span> and
+      <span class="num">POST /founder-unlock</span>.
+    </p>
+    <p class="hint">
+      All of it is one corpus: a single insurance provider, one product and one category.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="lim">
+    <h2 class="section-title" id="lim">Status and limitations</h2>
+    <div class="alert mt-16">
+      <b>The documentation describes a broader design than the code implements.</b>
+      This is a working service, not the wider platform the README describes. What runs is
+      retrieval, re-ranking, cited answers, a retrieval-derived confidence score, a refusal
+      path and a local evaluation harness. The README sketches a platform around that — a
+      design target rather than something that is built — and the directory reserved for the
+      agents in that design is empty. This page describes the code.
+    </div>
+    <p class="project-what mt-16">
+      There is no authentication. The per-address allowance is a spending limit on model
+      calls, not access control: it bounds what one address can spend and does nothing else.
+    </p>
+    <p class="project-what">
+      The corpus is a single insurance provider and one product, so the evaluation numbers
+      describe one document set rather than a general result.
+    </p>
+    <p class="hint mt-16">
+      One more note. The model the service calls is set by configuration, and the value the
+      deployed service runs with is not in the repository, so no model name is given on this
+      page.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="shots">
+    <h2 class="section-title" id="shots">Screenshots</h2>
+    <p class="hint mt-8">Captured from the live console at desktop and phone width. The pipeline description and the remaining allowance are both on screen before a question is asked.</p>
+    <div class="shots">
+      <figure class="shot">
+        <img src="assets/shots/landing-claimshield-1280.png" alt="The console landing page at desktop width, showing the retrieval summary, the question box and the remaining model calls" width="1280" height="900" loading="lazy">
+        <figcaption>The console landing page at 1280px: what the pipeline does, the remaining allowance for this address, and the numbered stages below.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/landing-claimshield-390.png" alt="The same page at phone width, stacked into a single column" width="390" height="844" loading="lazy">
+        <figcaption>The same page at 390px. One column, no sideways scroll.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="src">
+    <h2 class="section-title" id="src">Source</h2>
+    <div class="project-foot mt-16">
+      <a href="https://github.com/shreyash-sharma-byte/claimshield-ai" target="_blank" rel="noopener">claimshield-ai</a>
+      <a href="index.html">All projects</a>
+    </div>
+    <p class="hint mt-8">Default branch <span class="num">main</span>. No licence file.</p>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

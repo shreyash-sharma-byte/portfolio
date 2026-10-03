@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenClaimFlow · Shreyash Sharma</title>
+<meta name="description" content="An insurance claims platform end to end: losses filed online, auto-routed to a qualified adjuster, decided under authority limits, fully audited.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="OpenClaimFlow · Shreyash Sharma">
+<meta property="og:description" content="An insurance claims platform end to end: losses filed online, auto-routed to a qualified adjuster, decided under authority limits, fully audited.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OpenClaimFlow · Shreyash Sharma">
+<meta name="twitter:description" content="An insurance claims platform end to end: losses filed online, auto-routed to a qualified adjuster, decided under authority limits, fully audited.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash Sharma</a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html" aria-current="page">Work</a>
+      <a href="about.html">About</a>
+      <a href="notes.html">Notes</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="crumbs"><a href="work.html">← All work</a></p>
+    <p class="eyebrow">Insurance claims platform</p>
+    <h1 class="page-title">OpenClaimFlow</h1>
+    <p class="page-sub">
+      A claimant files a loss online — first notice of loss — the claim auto-routes to the
+      least-loaded qualified adjuster, adjusters work it through three stages (review, verification,
+      decision) and supervisors oversee the whole book with authority limits, audit and privacy
+      controls. Authority, traceability and privacy are modelled in the service rather than left
+      to the interface: who may approve what, why a claim was paid, and what a claimant must
+      never see.
+    </p>
+  </div>
+
+  <p class="project-what" style="margin-top:14px;">
+      <b>In plain terms:</b> Someone makes a claim online; the system routes it to the right handler, keeps a record of every decision, and stops anyone approving more than their limit.
+    </p>
+
+  <section class="entry" aria-label="Status and actions">
+    <p class="entry-line">
+      Built and running over a real database with seeded demo data. The repository's README states that all eleven slices are built, so nothing on this page is described as future work.
+    </p>
+    <div class="entry-actions">
+      <a class="btn btn-primary" href="https://shreyash-claims.tailae7ebb.ts.net" target="_blank" rel="noopener">Open the live demo</a>
+      <a class="btn btn-ghost" href="https://github.com/shreyash-sharma-byte/ai-assisted-claim-processing-system" target="_blank" rel="noopener">Repository</a>
+      <a class="btn btn-ghost" href="https://raw.githubusercontent.com/shreyash-sharma-byte/ai-assisted-claim-processing-system/main/demo/OpenClaimFlow-Complete-Demo.pdf" target="_blank" rel="noopener">Demo PDF, 59 pages (4 MB)</a>
+      <a class="btn btn-ghost" href="index.html">All projects</a>
+    </div>
+    <p class="entry-fine">On a fixed address — self-hosted, so it is up whenever the machine is running. The Keycloak sign-in page displays its own table of demo accounts — a claimant, an adjuster L1 and a supervisor — under a note that it is sample data for evaluation, so nothing else has to be arranged.</p>
+  </section>
+
+  <section class="section" aria-labelledby="arch">
+    <h2 class="section-title" id="arch">Architecture</h2>
+    <p class="pre-cap">Deployed topology</p>
+    <pre class="pre">Angular 22 SPA --OIDC/PKCE--&gt; Keycloak :8090
+                                  realm "claims"
+  |
+  `--/api (Bearer JWT)--&gt; Spring Boot :8081
+            |
+            +--&gt; PostgreSQL 16
+            |    (claims | claims_e2e)
+            +--&gt; Mailpit :1025 SMTP / :8025 UI
+            |    (delivered through the outbox)
+            `--&gt; filesystem storage (S3 seam)
+Playwright E2E boots its own backend :8082
+  + ng serve, on claims_e2e</pre>
+
+    <p class="pre-cap mt-24">Filing a claim, in order</p>
+    <ol class="flow">
+      <li>The client posts the claim with a <b>bearer token</b>.</li>
+      <li>One transaction begins: the request is validated, a rate limit of <b>20 filings per claimant per day</b> is enforced, and the policy number is normalised.</li>
+      <li>The policy must exist, the holder name and email must match case-insensitively, and the policy must be active. Otherwise a single <b>closed-world error</b> is returned that does not reveal which check failed.</li>
+      <li>A classifier picks the routing level from the product code and the configured authority ladder. A claim that cannot be routed is rejected.</li>
+      <li>Cover selections are validated against the policy's covers. The same policy, loss date and cover set filed twice within 24 hours is a <b>conflict</b>, answered with the original claim number.</li>
+      <li>A database sequence issues the claim number; the claim is saved <b>unassigned</b>.</li>
+      <li>A required-document checklist is seeded, and a transaction hook deletes stored photos if the transaction rolls back.</li>
+      <li>Photos are stored behind a <b>magic-byte check</b>, with a SHA-256 hash and size recorded per attachment.</li>
+      <li>A filing ledger row is written for the rate limit.</li>
+      <li>One row per selected cover, with a server-computed claimed total, plus an audit entry.</li>
+      <li>Assignment happens inside the same transaction: candidate adjusters at that level are locked, open claims counted, and the <b>least-loaded</b> one chosen, with the lowest id breaking ties. A claim is therefore never visible as unassigned, and two concurrent filings cannot double-assign.</li>
+      <li>Notification and email rows are written in the same transaction; a dispatcher retries delivery with backoff.</li>
+    </ol>
+
+    <p class="project-what mt-24">
+      <b>A decision, in order.</b> The adjuster's decision takes a row lock, returns not-found to a
+      non-assignee, compares the version, rejects a claim that is already decided, then consults the
+      authority gate. An approval closes the claim and records a payment; above the actor's limit it
+      re-assigns the claim to the least-loaded L2 or escalates it to a supervisor. A denial is never
+      gated. Audit, notification and email ride the same transaction.
+    </p>
+
+    <p class="pre-cap mt-24">Stack</p>
+    <p class="project-stack">
+      Angular 22 SPA · keycloak-js · TypeScript · Java 21 · Maven · Spring Boot · Spring Data JPA ·
+      PostgreSQL 16 · Flyway · Keycloak 26.3 (realm <span class="num">claims</span>, OIDC with PKCE) ·
+      Mailpit · transactional outbox · filesystem storage with an S3-compatible seam ·
+      Playwright end-to-end · GitHub Actions, three jobs
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="dec">
+    <h2 class="section-title" id="dec">Key decisions</h2>
+    <ul class="caps-list">
+      <li><b>Authority gate as a pure function.</b> A decision inside the actor's limit closes the claim and pays; above it the claim is referred upward. Denials are never gated. The gate is called at decision time, so the rule cannot drift between the interface and the server.</li>
+      <li><b>Optimistic locking.</b> A version compare-and-swap runs before any other guard, so a stale caller gets a conflict rather than a silent overwrite, and a conflict never masks a validation error.</li>
+      <li><b>Not-found instead of forbidden on cross-owner reads.</b> Refusing to confirm that a record exists is the privacy-correct answer.</li>
+      <li><b>Claimant visibility wall.</b> The claimant tracker returns workflow steps only. Reserves, internal notes, assignees and coverage never reach claimant surfaces, and this is pinned by tests.</li>
+      <li><b>Append-only audit at the data layer.</b> A migration adds a trigger that raises on <span class="num">UPDATE</span> or <span class="num">DELETE</span>, and there is no edit or delete endpoint to reach it. Truncation remains legal on purpose, because the test reset path uses it.</li>
+      <li><b>Transactional outbox.</b> Mail rows are written in the same transaction as the state change, so mail is never lost and never sent for a decision that did not happen.</li>
+      <li><b>Assignment inside the filing transaction.</b> Row-locked candidates plus a least-loaded pick, so no claim is ever observable as unassigned.</li>
+      <li><b>AI without an SDK.</b> Chat and per-cover advisory go over the OpenAI wire format; with no API key configured it degrades to a rules-only path and never fails the request.</li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="met">
+    <h2 class="section-title" id="met">Verified metrics</h2>
+    <div class="table-wrap mt-8">
+      <table>
+        <caption>Measured from the source on the default branch</caption>
+        <thead><tr><th scope="col">Metric</th><th scope="col" class="num">Value</th></tr></thead>
+        <tbody>
+          <tr><td>Spring HTTP handlers</td><td class="num">62</td></tr>
+          <tr><td>Flyway migrations</td><td class="num">30 (V1–V30)</td></tr>
+          <tr><td>Denial codes</td><td class="num">7</td></tr>
+          <tr><td>Realm roles</td><td class="num">5</td></tr>
+          <tr><td>Users in the demo realm</td><td class="num">16</td></tr>
+          <tr><td>Database tables</td><td class="num">23</td></tr>
+          <tr><td>Stored procedures and functions</td><td class="num">3</td></tr>
+          <tr><td>Sequences</td><td class="num">1</td></tr>
+          <tr><td>Playwright spec files</td><td class="num">18</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint mt-8">
+      The five realm roles are claimant, adjuster L1, adjuster L2, adjuster L3 and supervisor;
+      Keycloak also writes its own built-in <code>default-roles-claims</code>, which is not an
+      authored role and is not counted here. Test
+      counts are deliberately absent from this table: the most recent run on the repository did not
+      pass, so the numbers are stated under known limitations instead of being presented as a result.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="lim">
+    <h2 class="section-title" id="lim">Known limitations</h2>
+    <div class="alert mt-8">
+      <b>The repository's continuous integration is red.</b>
+      The most recent run on the pushed tip failed <span class="num">2</span> of
+      <span class="num">323</span> backend tests and <span class="num">11</span> of
+      <span class="num">32</span> end-to-end journeys, with the backend job failing, so the badge on
+      that repository is red while it is being worked through.
+    </div>
+    <p class="project-what mt-16">
+      The status file in the repository is stale: it reports an older figure than the test suite now
+      contains, so it should not be read as a current count. Both points are stated here rather than
+      left to the badge alone.
+    </p>
+    <p class="project-what">
+      Two notes from the stack. Object storage defaults to the filesystem, with an S3-compatible
+      seam behind the same interface, so the S3 path is a seam rather than the default. Mail is
+      delivered to Mailpit rather than to real recipients, and the Keycloak realm is a demonstration
+      one — its sign-in page says the account table is sample data for evaluation.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="product">
+    <h2 class="section-title" id="product">The running product</h2>
+    <p class="hint" style="margin-top:8px;">Captured from the deployed application, signed in as the seeded demo users.</p>
+    <div class="shots">
+      <figure class="shot">
+        <img src="assets/shots/claims-adjuster-queue-992.png" alt="The adjuster work queue, listing claims with status, age and assignment, signed in as adjuster.one" width="992" height="620" loading="lazy">
+        <figcaption>The adjuster's queue. Claims arrive here already routed by level.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/claims-authority-gate-992.png" alt="A decision screen showing the authority gate above the adjuster's limit, signed in as adjuster.six" width="992" height="620" loading="lazy">
+        <figcaption>The authority gate: a decision above the actor's limit is referred, not applied.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/claims-claim-detail-992.png" alt="A single claim in detail, showing covers, reserves and the staged workflow, signed in as a supervisor" width="992" height="620" loading="lazy">
+        <figcaption>One claim in full — covers, reserves and where it sits in the staged workflow.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/claims-audit-trail-992.png" alt="The append-only audit trail for a claim, listing every action with actor and timestamp" width="992" height="620" loading="lazy">
+        <figcaption>The append-only audit trail. There is no edit or delete path to it, and a database trigger enforces that.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="shots">
+    <h2 class="section-title" id="shots">Before sign-in</h2>
+    <div class="shots">
+      <figure class="shot">
+        <img src="assets/shots/landing-claims-1280.png" alt="The landing page before sign-in, showing the LOSS MANAGEMENT heading, the sign-in button and the architecture panel" width="1280" height="900" loading="lazy">
+        <figcaption>The pre-login landing page. The architecture panel is readable before anyone signs in.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/landing-claims-390.png" alt="The same OpenClaimFlow landing page at phone width, with the architecture panel stacked in a single column" width="390" height="844" loading="lazy">
+        <figcaption>The same page at 390px, with the architecture panel stacked.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/demo-claims-1280.png" alt="The Keycloak sign-in page, with a table of demo accounts beneath the sign-in form" width="1280" height="900" loading="lazy">
+        <figcaption>The Keycloak sign-in page, showing its own table of demo accounts.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/demo-claims-390.png" alt="The same Keycloak sign-in page at phone width, where the demo-accounts table stacks into single-column rows" width="390" height="844" loading="lazy">
+        <figcaption>The same sign-in page at 390px, where the account table stacks.</figcaption>
+      </figure>
+    </div>
+    <p class="hint mt-16">
+      Captured from the running application. The demo-accounts table under the form is shown in the
+      second pair of captures; the values in it are not reproduced on this page.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="src">
+    <h2 class="section-title" id="src">Source</h2>
+    <div class="project-foot mt-8">
+      <a href="https://github.com/shreyash-sharma-byte/ai-assisted-claim-processing-system" target="_blank" rel="noopener">ai-assisted-claim-processing-system</a>
+      <a href="index.html">All projects</a>
+    </div>
+    <p class="hint mt-16">
+      The repository also contains a 59-page visual demonstration PDF — 45 screenshots, 11 capability
+      deep-dives and a system map — at
+      <a href="https://raw.githubusercontent.com/shreyash-sharma-byte/ai-assisted-claim-processing-system/main/demo/OpenClaimFlow-Complete-Demo.pdf" target="_blank" rel="noopener">demo/OpenClaimFlow-Complete-Demo.pdf</a>
+      (4 MB, so it is a slow open on a phone). There is also a shorter 46-page version in the same folder.
+    </p>
+    <p class="hint">
+      There is no licence file in the repository, so the code is published without a licence grant
+      and is not open source.
+    </p>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

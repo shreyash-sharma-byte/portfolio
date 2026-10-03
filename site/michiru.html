@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Michiru — invoice automation · Shreyash Sharma</title>
+<meta name="description" content="An invoice automation pair: a Spring Boot API with an explicit state machine that chases overdue invoices, and an Angular dashboard of every reminder sent.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Michiru — invoice automation · Shreyash Sharma">
+<meta property="og:description" content="An invoice automation pair: a Spring Boot API with an explicit state machine that chases overdue invoices, and an Angular dashboard of every reminder sent.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Michiru — invoice automation · Shreyash Sharma">
+<meta name="twitter:description" content="An invoice automation pair: a Spring Boot API with an explicit state machine that chases overdue invoices, and an Angular dashboard of every reminder sent.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash Sharma</a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html" aria-current="page">Work</a>
+      <a href="about.html">About</a>
+      <a href="notes.html">Notes</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="crumbs"><a href="work.html">← All work</a></p>
+    <p class="eyebrow">Invoice automation</p>
+    <h1 class="page-title">Michiru</h1>
+    <p class="page-sub">
+      A Spring Boot API that tracks every invoice through a real state machine and chases the
+      ones that are due or overdue, and an Angular dashboard that shows the invoices and the audit
+      trail of every reminder sent. It answers a small problem that keeps happening: invoices go
+      out, then get forgotten.
+    </p>
+    <div class="row mt-16">
+      <span class="badge badge-impl">API complete</span>
+      <span class="badge">Client not yet hosted</span>
+    </div>
+  </div>
+
+  <p class="project-what" style="margin-top:14px;">
+      <b>In plain terms:</b> Overdue invoices get chased automatically so nothing is forgotten — and every reminder that went out is recorded.
+    </p>
+
+  <section class="entry" aria-label="Status and actions">
+    <p class="entry-line">
+      The API is complete and its 17 tests pass — invoice creation, the state machine, the reminder
+      cycle and the error responses are all covered. The dashboard is built but not tested, and
+      neither half is hosted, so there is no live address to open yet.
+    </p>
+    <div class="entry-actions">
+      <a class="btn btn-primary" href="mailto:shreyashms2501@gmail.com?subject=Michiru">Ask about this project</a>
+      <a class="btn btn-ghost" href="https://github.com/shreyash-sharma-byte/michiru-invoice-api" target="_blank" rel="noopener">API source</a>
+      <a class="btn btn-ghost" href="https://github.com/shreyash-sharma-byte/michiru-dashboard" target="_blank" rel="noopener">Dashboard source</a>
+    </div>
+    <p class="entry-fine">
+      Both repositories default to the <span class="num">main</span> branch. The API runs on port
+      8080 with the database recreated on every start, so a local run begins empty; the dashboard's
+      build output is not committed, so a clone has to build it before anything is served. There is
+      no demo address, and none is implied here.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="arch">
+    <h2 class="section-title" id="arch">Architecture</h2>
+    <p class="pre-cap" style="margin-top:12px;">Two processes and one database</p>
+    <pre class="pre">Angular dashboard :4200
+  |  /api/*  (dev proxy -&gt; :8081)
+  v
+Spring Boot API :8080
+  |  InvoiceController     /api/invoices
+  |  AutomationController  /api/automation/*
+  |  RemindersController   /api/reminders
+  |  scheduled reminder cycle
+  v
+H2 in-memory (recreated on every start)
+
+On API failure it serves bundled sample data,
+behind a "Sample data" pill.</pre>
+    <p class="hint mt-8">
+      API: Java 21, Spring Boot 4.1.1, Spring WebMVC, Spring Data JPA, Bean Validation and
+      Actuator, H2 in memory, Maven with the wrapper, JUnit 5 with MockMvc. Dashboard: Angular
+      22.1, TypeScript 6.0, RxJS 7.8, standalone components, signals, plain CSS with custom
+      properties.
+    </p>
+
+    <p class="pre-cap" style="margin-top:24px;">An invoice, in order</p>
+    <ol class="flow">
+      <li>Creating an invoice assigns it a generated number and the status <span class="num">DRAFT</span>, and saves its line items.</li>
+      <li>A status update passes through one explicit switch: <span class="num">DRAFT</span> to <span class="num">SENT</span> or <span class="num">CANCELLED</span>, <span class="num">SENT</span> to <span class="num">PAID</span> or <span class="num">CANCELLED</span>. End states are terminal, and an illegal move is rejected.</li>
+      <li>A scheduled job loads the invoices that are in the <span class="num">SENT</span> state — only those, because a draft is not yet billable and a paid or cancelled invoice is finished.</li>
+      <li>Each one is classified: past its due date it is <b>overdue</b>; within the configured reminder window before the due date it is <b>due soon</b>; otherwise it is skipped this cycle.</li>
+      <li>A <b>no-nagging check</b> reads the most recent reminder for that invoice and skips it if one was sent within the configured gap.</li>
+      <li>The reminder is persisted as a record with the invoice, the customer address, the reason, the timestamp and the channel.</li>
+      <li>Automation counters are updated, and the same cycle can be triggered on demand instead of waiting for the schedule.</li>
+      <li>The dashboard fetches the invoice page plus automation status and reminders together, then computes its totals and the audit table from those signals.</li>
+    </ol>
+  </section>
+
+  <section class="section" aria-labelledby="dec">
+    <h2 class="section-title" id="dec">Key decisions</h2>
+    <ul class="caps-list">
+      <li><b>An explicit invoice state machine.</b> One switch decides which transitions are legal, and end states stay terminal. There is no way to move an invoice backwards by accident.</li>
+      <li><b>Totals are derived, never stored.</b> The invoice total and each line amount are computed from the line items at read time with exact decimal arithmetic, so a stored total cannot drift away from the lines it is supposed to summarise.</li>
+      <li><b>A paid invoice cannot be deleted.</b> The delete path refuses, and the shared error handler turns that into a conflict response.</li>
+      <li><b>Only billable invoices are chased.</b> The engine queries the <span class="num">SENT</span> state specifically, so nothing reminds a customer about a draft or an invoice that is already settled.</li>
+      <li><b>A no-nagging rule.</b> At most one reminder per invoice per three days, enforced by reading the most recent reminder record rather than by a separate flag.</li>
+      <li><b>Every reminder is a record.</b> The audit trail is a first-class part of the product, exposed through its own endpoint, not a log line.</li>
+      <li><b>One error shape everywhere.</b> A single advice class returns the same JSON structure for validation, not-found, conflict and server errors, with field-level messages for validation failures.</li>
+      <li><b>Typed contracts and a visible fallback.</b> The dashboard's TypeScript models mirror the API, async state is held in signals, and when the API is unreachable the dashboard serves bundled sample data behind a visible pill. Deliberately, the run-reminders action has no such fallback, because an action with side effects must not appear to succeed when it failed.</li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="met">
+    <h2 class="section-title" id="met">Verified metrics</h2>
+    <div class="table-wrap" style="margin-top:12px;">
+      <table>
+        <caption>Counted from the source, the test methods and the build reports</caption>
+        <thead><tr><th scope="col">Metric</th><th scope="col" class="num">Value</th></tr></thead>
+        <tbody>
+          <tr><td>API tests, all passing</td><td class="num">17</td></tr>
+          <tr><td>Documented endpoints (nine mappings plus health)</td><td class="num">10</td></tr>
+          <tr><td>JPA entities</td><td class="num">3</td></tr>
+          <tr><td>Data transfer objects</td><td class="num">7</td></tr>
+          <tr><td>Repositories</td><td class="num">2</td></tr>
+          <tr><td>Controllers</td><td class="num">3</td></tr>
+          <tr><td>API main Java files</td><td class="num">25</td></tr>
+          <tr><td>API test files</td><td class="num">5</td></tr>
+          <tr><td>Lines of main Java code</td><td class="num">945</td></tr>
+          <tr><td>Dashboard source files</td><td class="num">20</td></tr>
+          <tr><td>Lines of TypeScript, HTML and CSS</td><td class="num">920</td></tr>
+          <tr><td>Tracked files in the API repository</td><td class="num">41</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint mt-8">
+      The 17 tests are counted from the test methods and confirmed by the build reports as 17 run,
+      0 failures, 0 errors, 0 skipped. The API repository's 41 tracked files include a multi-stage
+      Dockerfile. No test figure is given for the dashboard, which has no working tests.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="status">
+    <h2 class="section-title" id="status">Status and limitations</h2>
+    <div class="alert" style="margin-top:12px;">
+      <b>The dashboard is built but not tested.</b> The test runner is configured and installed,
+      but the only spec file is the untouched framework default, and it asserts a heading the
+      application no longer renders, so it cannot pass as written. The API is the tested half; the
+      dashboard is not, and nothing here claims otherwise.
+    </div>
+    <p class="project-what mt-16">
+      Neither half is hosted yet, so there is no live URL. Hosting the pair needs both parts at
+      once: the API running on its port, and the built dashboard served as static files. The build
+      output is not committed, so a clone has to build it first, and the built dashboard calls the
+      API on a relative path, which means a static host also needs a proxy in front of it.
+    </p>
+    <p class="project-what">
+      There is no persistence by design. The database is in memory and is recreated on every start,
+      so all data is lost on restart.
+    </p>
+    <p class="project-what">
+      Navigation is partial. The sidebar's other sections have no routes wired, and only the
+      dashboard route is defined.
+    </p>
+    <p class="project-what">
+      The reminder table has no empty state, and the invoice fetch has no error state because it
+      falls back to sample data instead. Email and SMS are simulated: the reminder channel is a
+      fixed value recording that a message would have been sent. Invoice numbering counts existing
+      rows rather than using a database sequence, so deleting an invoice can produce a duplicate
+      number and a server error. There is no continuous integration, no licence, and no deployment
+      configuration for the dashboard.
+    </p>
+    <p class="hint mt-16">
+      Two smaller notes. The API's configured port is 8080, while the dashboard's development proxy
+      targets 8081. The dashboard uses a dark theme, which is a deliberate contrast with the light
+      surface used across the rest of this site.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="shots">
+    <h2 class="section-title" id="shots">Screenshots</h2>
+    <p class="hint" style="margin-top:8px;">Captured from the built dashboard served locally, with the API not running — so the banner and the "Sample data" pill are doing their job. The dashboard uses a dark theme, which is a deliberate contrast with the light surface used across the rest of this site.</p>
+    <div class="shots">
+      <figure class="shot">
+        <img src="assets/shots/michiru-dashboard-1440.png" alt="The invoice dashboard showing totals, an invoice table with status badges, and the reminder automation panel with its audit trail" width="1440" height="900" loading="lazy">
+        <figcaption>Totals, the invoice table, and the reminder engine's audit trail — with the sample-data fallback clearly labelled.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="src">
+    <h2 class="section-title" id="src">Source</h2>
+    <div class="project-foot" style="margin-top:12px;">
+      <a href="https://github.com/shreyash-sharma-byte/michiru-invoice-api" target="_blank" rel="noopener">michiru-invoice-api</a>
+      <a href="https://github.com/shreyash-sharma-byte/michiru-dashboard" target="_blank" rel="noopener">michiru-dashboard</a>
+      <a href="index.html">All projects</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

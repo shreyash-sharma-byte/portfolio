@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enterprise Workflow Management System · Shreyash Sharma</title>
+<meta name="description" content="An enterprise workflow platform: versioned templates, per-station roles, and one five-check engine that gates every station change.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Enterprise Workflow Management System · Shreyash Sharma">
+<meta property="og:description" content="An enterprise workflow platform: versioned templates, per-station roles, and one five-check engine that gates every station change.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Enterprise Workflow Management System · Shreyash Sharma">
+<meta name="twitter:description" content="An enterprise workflow platform: versioned templates, per-station roles, and one five-check engine that gates every station change.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash Sharma</a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html" aria-current="page">Work</a>
+      <a href="about.html">About</a>
+      <a href="notes.html">Notes</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="crumbs"><a href="work.html">← All work</a></p>
+    <p class="eyebrow">Workflow platform</p>
+    <h1 class="page-title">Enterprise Workflow Management System</h1>
+    <p class="page-sub">
+      A workflow platform where organisations define reusable templates, configure stations
+      with role-based permissions, move instances between those stations, and keep a history of
+      every move. Most workflow code is a status column; this is the shape the problem takes
+      when versioned templates, per-station authority and an auditable trail are treated as the
+      requirements rather than as the parts to skip.
+    </p>
+  </div>
+
+  <p class="project-what" style="margin-top:14px;">
+      <b>In plain terms:</b> A system for moving work between people: who may act at each step, what must be done before work moves on, and a record of everything that happened.
+    </p>
+
+  <section class="entry" aria-label="Status and actions">
+    <p class="entry-line">
+      Deployed behind an nginx edge: an Angular 17 client, Django 4.2 with Django REST
+      Framework, PostgreSQL 16, and Keycloak for sign-in. Instances move between stations
+      through one engine that runs five checks in order, and nothing commits unless all five
+      pass.
+    </p>
+    <div class="entry-actions">
+      <a class="btn btn-primary" href="https://shreyash-workflow.tailae7ebb.ts.net" target="_blank" rel="noopener">Open the live demo</a>
+      <a class="btn btn-ghost" href="https://github.com/shreyash-sharma-byte/workflow-management-system" target="_blank" rel="noopener">Repository</a>
+    </div>
+    <p class="entry-fine">On a fixed address — self-hosted, so it is up whenever the machine is running. The sign-in page displays its own demo accounts, so nothing else has to be arranged.</p>
+  </section>
+
+  <section class="section" aria-labelledby="arch">
+    <h2 class="section-title" id="arch">Architecture</h2>
+    <p class="pre-cap" style="margin-top:12px;">Deployed topology</p>
+    <pre class="pre">browser
+  |
+  v
+nginx edge :8802
+  |-- /          --&gt; Angular 17 bundle
+  |-- /api/*     --&gt; Django 4.2 + DRF  :8000
+  `-- /realms/*  --&gt; shared Keycloak   :8090
+Django --&gt; PostgreSQL 16  (workflow_db)
+Keycloak --&gt; PostgreSQL 16  (realm store)</pre>
+
+    <p class="pre-cap" style="margin-top:24px;">One instance moving between stations, in order</p>
+    <ol class="flow">
+      <li>The client posts a move request naming the target station and optional remarks.</li>
+      <li>Authentication extracts the bearer token, resolves or creates the local user, and synchronises the token's realm roles into Django groups.</li>
+      <li>A permission gate on the viewset checks the caller is allowed to act on this instance.</li>
+      <li>The request body is validated and the target station resolved.</li>
+      <li>The workflow engine runs <b>five checks</b>, in this order, and all must pass: the instance is active; the user's groups intersect the roles the current station allows; a transition from the current station to the target exists in this template version; every required task at the current station is complete; and the optimistic lock still holds — the update matches the expected version, and zero matched rows means a conflict.</li>
+      <li>On success, inside <b>one transaction</b>: the station and owner are updated, the version is incremented, a final station completes the instance, a history row is written, and pending task executions are created for the new station.</li>
+      <li>After the transaction commits, in-app notifications are created for the station's users, and email is sent if mail is configured.</li>
+    </ol>
+    <p class="hint mt-16">
+      The API is published as an OpenAPI schema generated by
+      <span class="num">drf-spectacular</span>, with Swagger UI at
+      <span class="num">/api/v1/docs/</span>.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="dec">
+    <h2 class="section-title" id="dec">Key decisions</h2>
+    <ul class="caps-list">
+      <li><b>Five-check workflow engine.</b> Every station change passes one engine that validates instance state, station role, transition, task completion and the optimistic lock before committing. Movement cannot happen by any other path.</li>
+      <li><b>Stations own roles, not users.</b> A station declares which roles may act there, so authority is per-station rather than global. Nine realm roles separate administration, initiation, operation and audit.</li>
+      <li><b>Templates are versioned.</b> Publishing freezes an immutable version holding the stations, transitions and task definitions, so a running instance stays pinned to the version it started on even as the template moves on.</li>
+      <li><b>Four task types are executable configuration.</b> Approval, a form built from a JSON schema, a document upload with a MIME whitelist and a 1 MB cap, and a confirmation checklist. Payment, API and email task types are declared in the model but are not handled by the engine, so they are not implemented.</li>
+      <li><b>Audit that resists editing.</b> Instance history is exposed list-only, its model refuses updates on save, and the Django admin denies add and delete. It is not fully immutable — the one path that defeats it is listed under the limitations below.</li>
+      <li><b>Public instance sharing.</b> Each instance carries a UUID token that produces a share link for an external stakeholder.</li>
+      <li><b>Hardening, as implemented.</b> Whitelist-only CORS, scoped throttling on authentication and upload endpoints, middleware that strips HTML tags from text input, security headers, a 1 MB upload cap with a five-type MIME whitelist, and the Django admin moved off its default path.</li>
+      <li><b>Runtime images and deployment.</b> The back end image is <span class="num">python:3.12-slim</span> and the client build image is <span class="num">node:20-alpine</span>; the stack is wired together with Docker and Compose.</li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="phase">
+    <h2 class="section-title" id="phase">Phase status</h2>
+    <div class="table-wrap" style="margin-top:12px;">
+      <table>
+        <caption>Status as recorded in the repository</caption>
+        <thead>
+          <tr><th scope="col">Phase</th><th scope="col">Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Phase 1</td><td>Implemented</td></tr>
+          <tr><td>Phase 2</td><td>Implemented</td></tr>
+          <tr><td>Phase 3</td><td>Planned</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint mt-8">
+      The repository lists no contents for Phase 3, so no feature is attributed to it here.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="met">
+    <h2 class="section-title" id="met">Verified metrics</h2>
+    <div class="table-wrap" style="margin-top:12px;">
+      <table>
+        <caption>Counted from the repository and from static analysis of it</caption>
+        <thead><tr><th scope="col">Metric</th><th scope="col" class="num">Value</th></tr></thead>
+        <tbody>
+          <tr><td>Files mapped</td><td class="num">104</td></tr>
+          <tr><td>Graph nodes</td><td class="num">650</td></tr>
+          <tr><td>Edges</td><td class="num">1,327</td></tr>
+          <tr><td>Flow candidates</td><td class="num">17</td></tr>
+          <tr><td>Realm roles</td><td class="num">9</td></tr>
+          <tr><td>Data models</td><td class="num">11</td></tr>
+          <tr><td>Validation gates per move</td><td class="num">5</td></tr>
+          <tr><td>Users seeded in the realm import</td><td class="num">8</td></tr>
+          <tr><td>REST endpoints, repository's own figure</td><td class="num">around 40</td></tr>
+          <tr><td>Route and endpoint nodes resolved by static analysis</td><td class="num">17</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint mt-8">
+      The two endpoint figures count different things. Static analysis resolves 17 route and
+      endpoint nodes because Django REST Framework router registrations cannot be read
+      statically, so the lower number is a limit of the analysis rather than evidence of a
+      missing API. The graph figures come from a map synced three commits before the
+      repository's current HEAD.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="lim">
+    <h2 class="section-title" id="lim">Known limitations</h2>
+    <div class="alert alert-warn" style="margin-top:12px;">
+      <b>Token verification is switched off in the deployed build.</b>
+      The deployed Django runs with signature and issuer verification switched off, so it
+      decodes the bearer token without verifying it. Verified JWT authentication is
+      <b>not</b> claimed for this deployment.
+    </div>
+    <div class="alert alert-warn">
+      <b>The audit trail can be deleted with its parent.</b>
+      <span class="num">WorkflowInstanceViewSet</span> is a <span class="num">ModelViewSet</span>,
+      so an ADMIN can <span class="num">DELETE</span> an instance over the REST API — and the
+      history row's foreign key cascades, erasing that instance's entire trail. The history model
+      has no <span class="num">delete()</span> guard either, so a queryset-level delete would
+      bypass <span class="num">save()</span>. A <span class="num">destroy</span> override or a
+      <span class="num">PROTECT</span> foreign key closes it.
+    </div>
+    <ul class="caps-list mt-16">
+      <li><b>Public sharing needs a login.</b> The repository documentation describes the share link as reachable without an account, but in the deployed build it requires a login.</li>
+      <li><b>No audit export endpoint.</b> The documentation describes the audit log as exportable; no export endpoint exists.</li>
+      <li><b>A station with no roles configured stays open.</b> A station that declares no roles permits any authenticated user to act there.</li>
+      <li><b>No automated tests and no continuous integration.</b> There is no automated test suite and no continuous integration for this project.</li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="shots">
+    <h2 class="section-title" id="shots">Screenshots</h2>
+    <p class="hint" style="margin-top:8px;">
+      Captured from the deployed build. The repository also carries a demonstration procedure
+      document with ten screenshots.
+    </p>
+    <div class="shots">
+      <figure class="shot">
+        <img src="assets/shots/landing-workflow-1280.png" alt="Pre-login landing page for the workflow platform" width="1280" height="900" loading="lazy">
+        <figcaption>The landing page, before sign-in.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/demo-workflow-1280.png" alt="Keycloak sign-in page with a table of demo accounts" width="1280" height="900" loading="lazy">
+        <figcaption>The Keycloak sign-in page. The demo accounts are listed in the table on
+        the page itself.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/wfacc-1280_dashboard.png" alt="Signed-in dashboard showing workload and recent workflows" width="1280" height="900" loading="lazy">
+        <figcaption>The dashboard after sign-in: workload and recent workflows.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/wfacc-1280_instances.png" alt="Signed-in instance list showing workflow instances" width="1280" height="900" loading="lazy">
+        <figcaption>The instance list, where an instance is opened and moved on.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/demo-workflow-390.png" alt="Keycloak sign-in page at phone width, with the demo accounts table stacked" width="390" height="844" loading="lazy">
+        <figcaption>The same sign-in page at 390px, where the accounts table stacks.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/shots/wfacc-390_dashboard.png" alt="The signed-in workflow dashboard at phone width, with the workload cards stacked in a single column" width="390" height="844" loading="lazy">
+        <figcaption>The signed-in dashboard at 390px, with the workload cards stacked.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="src">
+    <h2 class="section-title" id="src">Source</h2>
+    <div class="project-foot" style="margin-top:12px;">
+      <a href="https://github.com/shreyash-sharma-byte/workflow-management-system" target="_blank" rel="noopener">workflow-management-system</a>
+      <a href="index.html">All projects</a>
+    </div>
+    <p class="hint mt-8">
+      Default branch <span class="num">master</span>. The repository carries no licence file.
+    </p>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

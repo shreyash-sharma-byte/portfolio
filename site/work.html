@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Selected work · Shreyash Sharma</title>
+<meta name="description" content="Six systems built end to end — three platforms with their own databases, identity and audit trails, and three focused builds. Five running right now.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="profile">
+<meta property="og:title" content="Selected work · Shreyash Sharma">
+<meta property="og:description" content="Six systems built end to end — three platforms with their own databases, identity and audit trails, and three focused builds. Five running right now.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Selected work · Shreyash Sharma">
+<meta name="twitter:description" content="Six systems built end to end — three platforms with their own databases, identity and audit trails, and three focused builds. Five running right now.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash Sharma</a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html" aria-current="page">Work</a>
+      <a href="about.html">About</a>
+      <a href="notes.html">Notes</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="eyebrow">Selected work</p>
+    <h1 class="page-title">Six systems, built and shipped</h1>
+    <p class="page-sub">
+      Three production-shaped platforms and three focused builds. Every figure on the
+      project pages is measured from the source, and each page says plainly what is not
+      finished. Source is public for all six.
+    </p>
+  </div>
+
+  <section class="section" aria-label="Projects">
+    <div class="caps-group">
+      <h2 class="section-title text-muted">Platform systems</h2>
+      <div class="projects">
+
+        <article class="project">
+          <div class="project-grid">
+            <div class="project-body">
+              <div class="project-head">
+                <h3 class="project-name"><a href="openclaimflow.html">OpenClaimFlow</a></h3>
+                <span class="badge badge-impl">Implemented</span>
+              </div>
+              <p class="project-what">
+                An end-to-end insurance claims platform. Claimants file a loss online, the
+                claim auto-routes to the least-loaded qualified adjuster, adjusters assess it
+                through a staged workflow, and supervisors run the whole book with authority
+                limits, audit and privacy controls.
+              </p>
+              <p class="project-topo">23 tables · 62 HTTP endpoints · 30 migrations · 5 roles · 7 denial codes · Playwright across the full stack</p>
+              <p class="project-dec">
+                <b>The decision worth reading:</b> authority is a gate, not a screen. A decision
+                inside the adjuster's limit closes the claim and records a payment; above it the
+                claim is re-assigned to the least-loaded L2 or escalated to a supervisor. Denials
+                are never gated. Because the gate is one function called at decision time, the
+                rule cannot drift between the interface and the server.
+              </p>
+              <p class="project-stack">Angular 22 · Java 21 · Spring Boot · PostgreSQL 16 · Flyway V1–V30 · Keycloak · Playwright</p>
+              <div class="project-foot">
+                <a href="openclaimflow.html">Architecture and decisions</a>
+                <a href="https://shreyash-claims.tailae7ebb.ts.net" target="_blank" rel="noopener">Live demo</a>
+                <a href="https://github.com/shreyash-sharma-byte/ai-assisted-claim-processing-system" target="_blank" rel="noopener">Repository</a>
+              </div>
+            </div>
+            <a class="project-thumb" href="openclaimflow.html" tabindex="-1" aria-hidden="true">
+              <img src="assets/shots/thumbs/claims-adjuster-queue.png" alt="" width="448" height="280" loading="lazy">
+            </a>
+          </div>
+        </article>
+
+        <article class="project">
+          <div class="project-grid">
+            <div class="project-body">
+              <div class="project-head">
+                <h3 class="project-name"><a href="banking.html">Banking Microservices</a></h3>
+                <span class="badge badge-impl">Implemented</span>
+              </div>
+              <p class="project-what">
+                A retail and business banking platform across eight services: accounts, atomic
+                money transfers, an event-driven payment pipeline, an immutable unified ledger,
+                and role-based access behind an API gateway — fronted by an Angular client.
+              </p>
+              <p class="project-topo">8 services · 5 databases · 3 Kafka topics · 76 tests · 9 architecture decision records</p>
+              <p class="project-dec">
+                <b>The decision worth reading:</b> money moves without a race. Each transfer is one
+                ACID transaction using a conditional update, so two concurrent transfers cannot
+                overdraw an account — and the ledger entry is written to a transactional outbox in
+                the same transaction, then moved
+                <span class="num">PENDING → SENDING → PUBLISHED</span> with confirmation and retry.
+                No ledger entry is lost, and none is applied twice.
+              </p>
+              <p class="project-stack">Java 17 · Spring Boot · Spring Cloud · Apache Kafka · PostgreSQL · Angular 22 · Docker</p>
+              <div class="project-foot">
+                <a href="banking.html">Architecture and decisions</a>
+                <a href="https://shreyash-banking.tailae7ebb.ts.net" target="_blank" rel="noopener">Live demo</a>
+                <a href="https://github.com/shreyash-sharma-byte/banking-microservices" target="_blank" rel="noopener">Platform source</a>
+              </div>
+            </div>
+            <a class="project-thumb" href="banking.html" tabindex="-1" aria-hidden="true">
+              <img src="assets/shots/thumbs/banking-dashboard.png" alt="" width="448" height="315" loading="lazy">
+            </a>
+          </div>
+        </article>
+
+        <article class="project">
+          <div class="project-grid">
+            <div class="project-body">
+              <div class="project-head">
+                <h3 class="project-name"><a href="workflow.html">Enterprise Workflow Management System</a></h3>
+                <span class="badge badge-impl">Phase 1–2 implemented</span>
+                <span class="badge badge-plan">Phase 3 planned</span>
+              </div>
+              <p class="project-what">
+                A workflow platform where organisations define versioned templates, configure
+                stations with role-based permissions, execute instances across those stations,
+                and keep a complete history of every move.
+              </p>
+              <p class="project-topo">9 realm roles · 11 data models · 4 task types · 5 validation gates per move</p>
+              <p class="project-dec">
+                <b>The decision worth reading:</b> every station change passes one engine that runs
+                five checks in order — the instance is active, the user holds the role required at
+                the current station, the transition exists, all required tasks are complete, and
+                the optimistic lock still holds. All five must pass before anything is committed.
+              </p>
+              <p class="project-stack">Angular 17 · Django 4.2 · Django REST Framework · PostgreSQL 16 · Keycloak · Docker</p>
+              <div class="project-foot">
+                <a href="workflow.html">Architecture and decisions</a>
+                <a href="https://shreyash-workflow.tailae7ebb.ts.net" target="_blank" rel="noopener">Live demo</a>
+                <a href="https://github.com/shreyash-sharma-byte/workflow-management-system" target="_blank" rel="noopener">Repository</a>
+              </div>
+            </div>
+            <a class="project-thumb" href="workflow.html" tabindex="-1" aria-hidden="true">
+              <img src="assets/shots/thumbs/wfacc-dashboard.png" alt="" width="448" height="315" loading="lazy">
+            </a>
+          </div>
+        </article>
+
+      </div>
+    </div>
+
+    <div class="caps-group" style="margin-top: 32px;">
+      <h2 class="section-title text-muted">Focused builds</h2>
+      <div class="projects">
+
+        <article class="project">
+          <div class="project-grid">
+            <div class="project-body">
+              <div class="project-head">
+                <h3 class="project-name"><a href="michiru.html">Michiru — invoice automation</a></h3>
+                <span class="badge badge-impl">API complete</span>
+                <span class="badge">Client not yet hosted</span>
+              </div>
+              <p class="project-what">
+                An invoice automation pair: a Spring Boot API that tracks every invoice through a
+                real state machine and chases the overdue ones on a schedule, and an Angular
+                dashboard that shows the invoices and the audit trail of every reminder sent.
+              </p>
+              <p class="project-topo">10 endpoints · 17 tests · 3 entities · one reminder per invoice per three days</p>
+              <p class="project-dec">
+                <b>The decision worth reading:</b> the reminder engine only chases invoices that are
+                actually billable — status <span class="num">SENT</span>, overdue or due soon — and a
+                no-nagging rule allows at most one reminder per invoice per three days. Every
+                reminder is a persisted record, so the audit trail is the product, not a log line.
+              </p>
+              <p class="project-stack">Java 21 · Spring Boot 4.1.1 · Spring Data JPA · H2 · Angular 22 · TypeScript</p>
+              <div class="project-foot">
+                <a href="michiru.html">Architecture and decisions</a>
+                <a href="https://github.com/shreyash-sharma-byte/michiru-invoice-api" target="_blank" rel="noopener">API source</a>
+                <a href="https://github.com/shreyash-sharma-byte/michiru-dashboard" target="_blank" rel="noopener">Dashboard source</a>
+              </div>
+            </div>
+            <a class="project-thumb" href="michiru.html" tabindex="-1" aria-hidden="true">
+              <img src="assets/shots/thumbs/michiru-dashboard.png" alt="" width="448" height="280" loading="lazy">
+            </a>
+          </div>
+        </article>
+
+        <article class="project">
+          <div class="project-grid">
+            <div class="project-body">
+              <div class="project-head">
+                <h3 class="project-name"><a href="cartographer.html">Living Codebase Cartographer</a></h3>
+                <span class="badge badge-impl">Implemented</span>
+                <span class="badge">MIT</span>
+              </div>
+              <p class="project-what">
+                An offline codebase mapper. Point it at any repository and it produces symbols,
+                endpoints, call graphs, data lineage, blast-radius impact analysis and
+                request-flow traces — then renders a portable explorer that opens straight from
+                the filesystem. Python standard library only: no packages, no language server,
+                no network calls.
+              </p>
+              <p class="project-topo">Mapped 4 codebases · 606 files · 4,036 nodes · 12,333 edges · 428 checks passing</p>
+              <p class="project-dec">
+                <b>The decision worth reading:</b> no fact is stated without its evidence. Every node
+                and edge carries a confidence level, a <span class="num">file:line</span> citation and
+                the commit it was verified against, and that confidence is consumed downstream — an
+                impact query prints each caller with its confidence, and the explorer draws and
+                filters on it rather than decorating with it.
+              </p>
+              <p class="project-stack">Python 3 (standard library only) · no dependencies · offline · MIT</p>
+              <div class="project-foot">
+                <a href="cartographer.html">Architecture and decisions</a>
+                <a href="https://shreyash-cartographer.tailae7ebb.ts.net" target="_blank" rel="noopener">Live explorer</a>
+                <a href="https://github.com/shreyash-sharma-byte/living-codebase-cartographer" target="_blank" rel="noopener">Repository</a>
+              </div>
+            </div>
+            <a class="project-thumb" href="cartographer.html" tabindex="-1" aria-hidden="true">
+              <img src="assets/shots/thumbs/cartographer-explorer.png" alt="" width="448" height="280" loading="lazy">
+            </a>
+          </div>
+        </article>
+
+        <article class="project">
+          <div class="project-grid">
+            <div class="project-body">
+              <div class="project-head">
+                <h3 class="project-name"><a href="claimshield.html">ClaimShield AI</a></h3>
+                <span class="badge badge-impl">Working service</span>
+                <span class="badge badge-plan">Wider platform planned</span>
+              </div>
+              <p class="project-what">
+                A retrieval-augmented policy service. It indexes policy clauses into a vector
+                store, retrieves and re-ranks the clauses behind a question, and answers only
+                from what it retrieved — with citations and a confidence score — plus a local
+                harness that scores the retriever itself.
+              </p>
+              <p class="project-topo">93 indexed clauses · 29 evaluation questions · 5 endpoints · evaluation costs zero model calls</p>
+              <p class="project-dec">
+                <b>The decision worth reading:</b> it refuses rather than guesses. Confidence is
+                derived from retrieval distance, not self-reported by the model, and below a fixed
+                floor the service returns "not enough evidence" without calling the model at all.
+                The public console gives each address a small allowance of model calls, counted at
+                the single choke point every call passes through.
+              </p>
+              <p class="project-stack">Python · FastAPI · FAISS · sentence-transformers · Groq</p>
+              <div class="project-foot">
+                <a href="claimshield.html">Architecture and decisions</a>
+                <a href="https://shreyash-claimshield.tailae7ebb.ts.net" target="_blank" rel="noopener">Live console</a>
+                <a href="https://github.com/shreyash-sharma-byte/claimshield-ai" target="_blank" rel="noopener">Repository</a>
+              </div>
+            </div>
+            <a class="project-thumb" href="claimshield.html" tabindex="-1" aria-hidden="true">
+              <img src="assets/shots/thumbs/claimshield-console.png" alt="" width="448" height="280" loading="lazy">
+            </a>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>
