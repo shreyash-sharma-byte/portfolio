@@ -309,6 +309,48 @@ a:hover { color: var(--accent-strong); }
 }
 .btn-ghost:hover { background: var(--surface-2); color: var(--ink); }
 
+/* --------------------------------------------------------------------------
+   Live demo links. Every demo sits on a stable *.tailae7ebb.ts.net host, so
+   they can be matched on the URL prefix: no markup has to carry a class, and
+   a demo link added anywhere in future is styled automatically.
+   The filled dot is what reads as "this one is running", which is the thing
+   worth noticing at a glance. Deliberately the dot plus the accent, rather
+   than filling every button, so a row of five demos does not become a wall of
+   colour.
+   -------------------------------------------------------------------------- */
+a[href^="https://shreyash-"] {
+  color: var(--accent-strong);
+}
+
+a[href^="https://shreyash-"]::before {
+  content: "";
+  display: inline-block;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--credit);
+  vertical-align: middle;
+}
+
+/* .btn is already a flex row with its own gap, so the dot needs no margin */
+.btn[href^="https://shreyash-"]::before { margin-right: 0; }
+/* on the filled button the dot has to sit on the accent, not in green */
+.btn-primary[href^="https://shreyash-"]::before { background: var(--on-accent); }
+
+/* Ghost buttons keep a light outline by default, which reads as secondary.
+   The live ones get the accent outline instead, so the demo row looks like a
+   set of actions rather than another line of prose links. */
+.entry-actions a.btn-ghost[href^="https://shreyash-"] {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+.entry-actions a.btn-ghost[href^="https://shreyash-"]:hover {
+  background: var(--surface-2);
+  color: var(--accent-strong);
+}
+
 .btn-sm { padding: 8px 14px; min-height: 36px; }
 
 /* --------------------------------------------------------------------------
