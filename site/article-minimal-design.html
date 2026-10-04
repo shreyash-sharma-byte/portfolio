@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emphasis from isolation, not from weight · Shreyash Sharma</title>
+<meta name="description" content="Why this portfolio ships no JavaScript, no build step and no web fonts — and the layout check that kept passing while the header was visibly broken.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Emphasis from isolation, not from weight · Shreyash Sharma">
+<meta property="og:description" content="Why this portfolio ships no JavaScript, no build step and no web fonts — and the layout check that kept passing while the header was visibly broken.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Emphasis from isolation, not from weight · Shreyash Sharma">
+<meta name="twitter:description" content="Why this portfolio ships no JavaScript, no build step and no web fonts — and the layout check that kept passing while the header was visibly broken.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash<span class="brand-rest"> Sharma</span></a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html">Project Work</a>
+      <a href="about.html">About</a>
+      <a href="articles.html">Articles</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="eyebrow"><a href="articles.html">Articles</a> · Design</p>
+    <h1 class="page-title">Emphasis from isolation, not from weight</h1>
+    <p class="page-sub">
+      Why this site ships no JavaScript, no build step and no web fonts — and the layout
+      check that went on passing while the header was visibly broken.
+    </p>
+  </div>
+
+  <section class="section" aria-label="Article">
+    <p class="note-meta">the rules this site is built to, and what each one costs</p>
+    <div class="note-body">
+      <p>
+        A portfolio is an argument about how someone works, and it is made out of the same
+        material as the work. The usual way to make that argument is to add: a hero
+        animation, a web font, a component library, a scroll effect. The page ends up
+        mostly about its own chrome. This site argues the other way round, and the rules
+        below are load-bearing rather than decorative. Each one costs something, and the
+        cost is the reason to trust it.
+      </p>
+    </div>
+
+    <div class="kv mt-16">
+      <div class="kv-row">
+        <div class="kv-key">No JavaScript</div>
+        <div class="kv-val">
+          One <code>&lt;script&gt;</code> element exists across all fourteen pages, and it
+          is <code>application/ld+json</code>: structured metadata for a search engine,
+          not behaviour. Nothing can fail at runtime on a page where nothing runs.
+        </div>
+      </div>
+      <div class="kv-row">
+        <div class="kv-key">No build step</div>
+        <div class="kv-val">
+          Hand-written HTML and a single stylesheet. There is no dependency to upgrade, no
+          bundler to reconfigure, and nothing at all between an edit and the file that
+          gets served.
+        </div>
+      </div>
+      <div class="kv-row">
+        <div class="kv-key">No external requests</div>
+        <div class="kv-val">
+          Type is the system font stack and every image is local. One origin, so there is
+          no third-party request in the critical path, no flash of swapped type, and no
+          visitor data leaving the page into somebody else's log.
+        </div>
+      </div>
+      <div class="kv-row">
+        <div class="kv-key">Real pages, not one long scroll</div>
+        <div class="kv-val">
+          Every page has one job. A URL per idea is linkable, and a page that is a single
+          thing is a page somebody can finish.
+        </div>
+      </div>
+      <div class="kv-row">
+        <div class="kv-key">One accent, used only where it means something</div>
+        <div class="kv-val">
+          Emphasis comes from isolation and brevity, never from size or weight. A claim
+          made loud is a claim that has to be, and if everything is loud then the one line
+          that matters cannot be found.
+        </div>
+      </div>
+      <div class="kv-row">
+        <div class="kv-key">A box around each section</div>
+        <div class="kv-val">
+          A 1px rule is what separates "this is one thing" from "this is the next thing".
+          It is the cheapest structure available, and it survives a 390px viewport.
+        </div>
+      </div>
+      <div class="kv-row">
+        <div class="kv-key">Diagrams are text</div>
+        <div class="kv-val">
+          The architecture diagrams are <code>&lt;pre&gt;</code> blocks held to a 48-column
+          budget, and they scroll sideways rather than reflow — a diagram that wraps is no
+          longer a diagram.
+        </div>
+      </div>
+      <div class="kv-row">
+        <div class="kv-key">Nothing that needs explaining</div>
+        <div class="kv-val">
+          No analytics, no cookie banner, no theme toggle, no newsletter. Each of those is
+          a thing that can fail silently, or lie, or need a paragraph of apology.
+        </div>
+      </div>
+    </div>
+
+    <div class="note-body mt-16">
+      <p>
+        <b>The check that passed while the header was broken.</b> Rules are worth nothing
+        unless something tests them, so every page is measured at two widths — 390px and
+        1280px — and asserted to fit: fourteen pages, twenty-eight measurements, nothing
+        extending past the viewport. That check found real bugs, and then missed an obvious
+        one. A navigation label grew, the row of links wrapped onto a second line, and the
+        header went from one line tall to two. All twenty-eight measurements passed.
+      </p>
+      <p>
+        The reason is that a wrapped flex row is not overflow. Everything still fits inside
+        the page, so a measurement that asks "does anything stick out sideways" has nothing
+        to report. The bug was plain in a screenshot and invisible to the test.
+      </p>
+      <p>
+        The fix was not a bigger test. It was to pin the navigation to a single line, so
+        that the next label to grow overflows instead of wrapping — converting a failure
+        mode the check could not see into one it can. That is the transferable part: when a
+        test keeps passing on something you can see is wrong, the thing to change is often
+        the page, not the test. Make the bad state representable, then it becomes
+        detectable.
+      </p>
+      <p>
+        <b>What it costs.</b> A hand-written site is more editing than clicking. Fourteen
+        pages is around 170 KB of HTML and one 27 KB stylesheet, served whole, with no
+        framework in the middle of it. In exchange, every page is a single request that
+        either arrives or does not: there is no state to hydrate, no hydration to fail, and
+        nothing standing between a visitor and the work.
+      </p>
+      <p>
+        The same instinct runs through how these projects are hosted, where it shows up as
+        <a href="article-five-projects-one-laptop.html">one platform layer shared by every
+        project</a> instead of five duplicated stacks. Minimal is not a style here. It is
+        the same decision — do not duplicate, do not decorate, do not require a runtime —
+        applied to a stylesheet and to a server.
+      </p>
+    </div>
+  </section>
+
+  <div class="entry-actions">
+    <a class="btn btn-ghost" href="articles.html">All articles</a>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

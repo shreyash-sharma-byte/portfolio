@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Five projects on one laptop · Shreyash Sharma</title>
+<meta name="description" content="Five projects, one machine, and a platform layer that sits idle at 1.8 GB whether anyone is looking or not. What is shared, what is deliberately not, and what a sixth project costs.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Five projects on one laptop · Shreyash Sharma">
+<meta property="og:description" content="Five projects, one machine, and a platform layer that sits idle at 1.8 GB whether anyone is looking or not. What is shared, what is deliberately not, and what a sixth project costs.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Five projects on one laptop · Shreyash Sharma">
+<meta name="twitter:description" content="Five projects, one machine, and a platform layer that sits idle at 1.8 GB whether anyone is looking or not. What is shared, what is deliberately not, and what a sixth project costs.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash<span class="brand-rest"> Sharma</span></a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html">Project Work</a>
+      <a href="about.html">About</a>
+      <a href="articles.html">Articles</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="eyebrow"><a href="articles.html">Articles</a> · Infrastructure</p>
+    <h1 class="page-title">Five projects on one laptop</h1>
+    <p class="page-sub">
+      Five projects, one machine, and a platform layer that sits there at 1.8 GB whether
+      anyone is looking or not. What is shared, what is deliberately kept apart, and what
+      a sixth project would cost.
+    </p>
+  </div>
+
+  <section class="section" aria-label="Article">
+    <p class="note-meta">share the platform, never the services</p>
+    <div class="note-body">
+      <p>
+        Running five projects on one machine is not a memory problem. It is a duplication
+        problem. Each project arrived with its own copy of everything a project needs:
+        a database, an identity provider, a message broker, an edge proxy, a public
+        ingress point. Every one of those is small on its own, and none of them is what
+        the project is actually about. The copy is what grows.
+      </p>
+    </div>
+
+    <div class="table-wrap table-wrap--fit mt-16">
+      <table>
+        <caption>Copied once per project, measured on the machine the demos run on</caption>
+        <thead>
+          <tr><th scope="col">Its own copy of</th><th scope="col" class="num">Idle</th><th scope="col" class="num">×10 projects</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>A Postgres container</td><td class="num">~35 MB</td><td class="num">~350 MB</td></tr>
+          <tr><td>An identity provider</td><td class="num">420 MB</td><td class="num">~4.2 GB</td></tr>
+          <tr><td>A Kafka broker</td><td class="num">411 MB</td><td class="num">~4.1 GB</td></tr>
+          <tr><td>A Zipkin instance</td><td class="num">171 MB</td><td class="num">~1.7 GB</td></tr>
+          <tr><td>An edge proxy</td><td class="num">~9 MB</td><td class="num">~90 MB</td></tr>
+          <tr><td>An ingress node</td><td class="num">~67 MB</td><td class="num">~670 MB</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note-body mt-16">
+      <p>
+        Laid out that way, these five projects measured <b>13 GB</b>. Ten of them would not
+        fit in the machine at all. Nothing in that table is exotic; it is just what five
+        independent stacks cost when each one insists on being complete.
+      </p>
+      <p>
+        So the machine is drawn in two layers, and the split is the whole design:
+      </p>
+    </div>
+
+    <pre class="pre">ALWAYS ON  shared, one copy, ~1.8 GB idle
+  postgres   one server, a database per project
+  keycloak   one instance, a realm per project
+  kafka      one broker, namespaced topics
+  edge       one proxy, a block per project
+  ingress    one node per app
+  zipkin     tracing
+
+ON DEMAND  only while a project is being shown
+  the project's own services, and nothing else
+  banking    8 services  ~1.9 GB
+  claims                 ~0.4 GB</pre>
+
+    <div class="note-body mt-16">
+      <p>
+        <b>The first layer is idle by design</b> — resident, serving nobody, most of the
+        day. It is worth measuring rather than estimating, so here it is with no project
+        open at all:
+      </p>
+    </div>
+
+    <div class="table-wrap table-wrap--fit mt-16">
+      <table>
+        <caption>The always-on layer, measured idle, no project open</caption>
+        <thead>
+          <tr><th scope="col">Component</th><th scope="col" class="num">MB</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Ingress — six node processes, five of them per-app</td><td class="num">432</td></tr>
+          <tr><td>Identity provider, one instance, two realms</td><td class="num">422</td></tr>
+          <tr><td>Message broker</td><td class="num">411</td></tr>
+          <tr><td>Database server, eight databases</td><td class="num">172</td></tr>
+          <tr><td>Tracing</td><td class="num">171</td></tr>
+          <tr><td>Workflow backend and mail sink</td><td class="num">159</td></tr>
+          <tr><td>Edge proxies, five</td><td class="num">44</td></tr>
+          <tr><td><b>Total</b></td><td class="num"><b>1,810</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note-body mt-16">
+      <p>
+        <b>1.8 GB, flat.</b> That number is the one that matters, because it is the one
+        that is always there and it is the one a sixth project barely touches — the next
+        project adds a database to an existing server, a realm to an existing provider,
+        a block to an existing proxy and one more ingress node. Call it 80 MB, against
+        700 MB to 1.4 GB for a duplicated copy of the same thing.
+      </p>
+      <p>
+        The largest single line is the honest surprise, and it is not the database or the
+        identity provider. It is <b>ingress, at 432 MB</b> across six node processes —
+        333 MB of that for the five per-app nodes alone. Stable public hostnames are paid
+        for in memory, and at this scale that is a deliberate trade rather than a free
+        one. It is argued in <a href="article-public-urls.html">its own write-up</a>.
+      </p>
+      <p>
+        That gives the rule the rest of this is built on:
+        <b>consolidate the platform, never the services.</b>
+      </p>
+    </div>
+
+    <div class="table-wrap mt-16">
+      <table>
+        <caption>The line, drawn once</caption>
+        <thead>
+          <tr><th scope="col">Shared — one copy for every project</th><th scope="col">Kept separate — one per project</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>One database server, one database per project</td><td>Each project's own services</td></tr>
+          <tr><td>One identity provider, one realm per project</td><td>Each project's own frontend bundle</td></tr>
+          <tr><td>One broker, namespaced topics</td><td>Its own deploy and restart</td></tr>
+          <tr><td>One edge proxy, one block per project</td><td>Its own heap and classpath</td></tr>
+          <tr><td>One ingress node per app</td><td>Its own release cycle</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note-body mt-16">
+      <p>
+        <b>Databases, not schemas.</b> Inside the shared server, each project gets its own
+        database rather than a schema inside a common one. The database name is what every
+        application already specifies, so a connection string changes only in host and
+        port — no search-path wiring, no per-schema grants to remember. Isolation is then
+        enforced by Postgres itself, separate catalogs and separate roles, instead of by
+        convention. It also sidesteps the schema footguns: a shared <code>public</code>
+        schema, extension collisions, and migration tools that assume they own the
+        database they are pointed at. An identity provider, in particular, expects to own
+        its database. Memory is identical either way; what costs is the container count,
+        not the number of databases.
+      </p>
+      <p>
+        <b>Why the services stay apart.</b> The tempting second move is to collapse every
+        service into a single JVM — several Spring applications can share one runtime, each
+        with its own port and datasource, and the module structure survives. I priced it
+        rather than guessed at it: about <b>2.1 GB</b>. What does not survive the merge is
+        independent deployability, which is the property the architecture is named for. One
+        process means no independent restart, no fault isolation, one heap for every
+        service, one classpath for every dependency version, and process-global state
+        fighting the whole idea through system properties, static initialisers and shutdown
+        hooks. The result is a modular monolith — a respectable shape, a different one, and
+        it would make the projects' own descriptions false. Rejected at that price. The same
+        ~1.9 GB comes back for nothing by starting a project when it is being shown and
+        stopping it afterwards.
+      </p>
+      <p class="hint">
+        Two caveats. The idle numbers here are resident memory, not ceilings — a shared
+        broker or identity provider grows under load, which is why the identity provider
+        runs with an explicit heap ceiling instead of a percentage of the host; see
+        <a href="article-jvm-tuning.html">the JVM write-up</a> for what that cost when it
+        was wrong. And shared is not coupled: no service in one project talks to a service
+        in another. They share a server, an auth instance and an ingress point, and nothing
+        else.
+      </p>
+    </div>
+  </section>
+
+  <div class="entry-actions">
+    <a class="btn btn-ghost" href="articles.html">All articles</a>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

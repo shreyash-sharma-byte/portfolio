@@ -562,6 +562,13 @@ a[href^="https://shreyash-"]::before {
 
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
 
+/* A label-and-number table stretched to the full column leaves a dead gap
+   between the label and its value — the first column absorbs all the slack.
+   The fit variant lets the border hug the content instead. Text tables, where
+   both columns are prose, still want the full width. */
+.table-wrap--fit { display: inline-block; max-width: 100%; }
+.table-wrap--fit > table { width: auto; }
+
 table {
   border-collapse: collapse;
   width: 100%;
