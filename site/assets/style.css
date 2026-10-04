@@ -753,7 +753,15 @@ td.num, th.num { font-family: var(--mono); font-variant-numeric: tabular-nums; w
    -------------------------------------------------------------------------- */
 
 @media (max-width: 639px) {
-  .topnav { gap: 0; }
+  /* Five nav items plus the wordmark, inside 362px of usable width. "Project
+     Works" alone needs 252px and the nav box is only 234px, and the full
+     wordmark takes 109px of that. So the surname is dropped on phones and
+     restored above 640px, which buys ~50px of headroom instead of shaving the
+     labels and tap targets to fit by a pixel or two.
+     The row is pinned to nowrap on purpose: if a future label overflows, that
+     surfaces as horizontal overflow the layout check can see, rather than
+     silently wrapping to a second row that eats 108px of an 844px screen. */
+  .topnav { gap: 0; flex-wrap: nowrap; }
   .topnav a {
     padding: 8px 5px;
     font-size: 0.625rem;
@@ -762,10 +770,9 @@ td.num, th.num { font-family: var(--mono); font-variant-numeric: tabular-nums; w
     align-items: center;
     min-height: 44px;
   }
-  /* Five nav items plus the wordmark must fit 362px of usable width, or the
-     sticky bar wraps to two rows and eats 108px of an 844px screen. */
   .topbar-in { gap: 8px; padding: 10px 12px; }
   .brand { display: inline-flex; align-items: center; min-height: 44px; font-size: 0.6875rem; }
+  .brand-rest { display: none; }
   .btn-sm { min-height: 44px; padding: 8px 10px; }
   /* Link lists, not prose: these are not covered by the inline exception, so
      they get the same 44px floor as the buttons. */
