@@ -45,57 +45,107 @@
   </div>
 
   <ul class="articles mt-8">
-    <li class="article-item">
-      <p class="article-meta">Layout</p>
-      <a class="article-link" href="article-flex-min-width.html">A 784px column inside a 390px viewport</a>
-      <p class="article-sum">A flex item's default min-width:auto let a wide child size the main column at 784px inside a 390px viewport. Constraining the column was the fix.</p>
-    </li>
-    <li class="article-item">
-      <p class="article-meta">Memory</p>
-      <a class="article-link" href="article-jvm-tuning.html">JVM tuning that was measured, not guessed</a>
-      <p class="article-sum">Nine Spring services and a broker retuned twice from measurement. Two attempts failed, and the correction to my own thread-stack claim is the part worth keeping.</p>
-    </li>
-    <li class="article-item">
-      <p class="article-meta">Infrastructure</p>
-      <a class="article-link" href="article-consolidation-38mb.html">The consolidation that saved 38 MB, not 150</a>
-      <p class="article-sum">Seven Postgres containers merged into one. The estimate was 100–150 MB; the measurement was 38 MB, and the decision was kept on operational grounds.</p>
-    </li>
-    <li class="article-item">
-      <p class="article-meta">Identity</p>
-      <a class="article-link" href="article-keycloak-realms.html">One identity provider, two realms, two origins</a>
-      <p class="article-sum">Two apps, each with its own realm and its own hostname, served by one identity provider. 838 MB saved, and the issuer check that proves it.</p>
-    </li>
-    <li class="article-item">
-      <p class="article-meta">Database</p>
-      <a class="article-link" href="article-partition-expiry.html">The partition that expired on the first of the month</a>
-      <p class="article-sum">One hardcoded partition per table ran out of calendar on the first of the next month, and took an unrelated transfer flow down with it.</p>
-    </li>
-    <li class="article-item">
-      <p class="article-meta">Networking</p>
-      <a class="article-link" href="article-cors-allowlist.html">A CORS rule that could never work</a>
-      <p class="article-sum">An allow-list that named only localhost could never contain a rotating tunnel hostname. One request, two verdicts, depending on who sent it.</p>
-    </li>
-    <li class="article-item">
-      <p class="article-meta">Process</p>
-      <a class="article-link" href="article-out-of-tree-deploys.html">Deploying without touching the source repositories</a>
-      <p class="article-sum">Deployment wiring lives in separate clones as re-appliable patches, so the public repositories stay byte-identical to their last commit.</p>
-    </li>
-    <li class="article-item">
-      <p class="article-meta">Process</p>
-      <a class="article-link" href="article-smaller-traps.html">Smaller traps worth writing down</a>
-      <p class="article-sum">Five small failures: a stale bind-mount, a resurrected service, a stale env_file, a global selector, and a file truncated before it was written.</p>
-    </li>
-    <li class="article-item">
-      <p class="article-meta">Infrastructure</p>
-      <a class="article-link" href="article-tailscale-nodes.html">Five public demos from one laptop</a>
-      <p class="article-sum">Five unrelated apps, five stable public hostnames, one machine. Why one node per app beat path prefixes, and one first-configuration race.</p>
-    </li>
-    <li class="article-item">
-      <p class="article-meta">Testing</p>
-      <a class="article-link" href="article-layout-blind-spot.html">The bug the layout check could not see</a>
-      <p class="article-sum">A nav label grew, the row wrapped, and the header bar doubled in height. The layout check passed 20/20 because a wrapped row is not overflow.</p>
-    </li>
-  </ul>
+      <li class="article-item">
+        <div class="article-meta">
+          <span class="article-cat">Layout</span>
+          <span class="article-read">1 min read</span>
+        </div>
+        <div class="article-body">
+          <a class="article-link" href="article-flex-min-width.html">A 784px column inside a 390px viewport</a>
+          <p class="article-sum">A flex item's default min-width:auto let a wide child size the main column at 784px inside a 390px viewport. Constraining the column was the fix.</p>
+        </div>
+      </li>
+      <li class="article-item">
+        <div class="article-meta">
+          <span class="article-cat">Memory</span>
+          <span class="article-read">6 min read</span>
+        </div>
+        <div class="article-body">
+          <a class="article-link" href="article-jvm-tuning.html">JVM tuning that was measured, not guessed</a>
+          <p class="article-sum">Nine Spring services and a broker retuned twice from measurement. Two attempts failed, and the correction to my own thread-stack claim is the part worth keeping.</p>
+        </div>
+      </li>
+      <li class="article-item">
+        <div class="article-meta">
+          <span class="article-cat">Infrastructure</span>
+          <span class="article-read">2 min read</span>
+        </div>
+        <div class="article-body">
+          <a class="article-link" href="article-consolidation-38mb.html">The consolidation that saved 38 MB, not 150</a>
+          <p class="article-sum">Seven Postgres containers merged into one. The estimate was 100–150 MB; the measurement was 38 MB, and the decision was kept on operational grounds.</p>
+        </div>
+      </li>
+      <li class="article-item">
+        <div class="article-meta">
+          <span class="article-cat">Identity</span>
+          <span class="article-read">2 min read</span>
+        </div>
+        <div class="article-body">
+          <a class="article-link" href="article-keycloak-realms.html">One identity provider, two realms, two origins</a>
+          <p class="article-sum">Two apps, each with its own realm and its own hostname, served by one identity provider. 838 MB saved, and the issuer check that proves it.</p>
+        </div>
+      </li>
+      <li class="article-item">
+        <div class="article-meta">
+          <span class="article-cat">Database</span>
+          <span class="article-read">1 min read</span>
+        </div>
+        <div class="article-body">
+          <a class="article-link" href="article-partition-expiry.html">The partition that expired on the first of the month</a>
+          <p class="article-sum">One hardcoded partition per table ran out of calendar on the first of the next month, and took an unrelated transfer flow down with it.</p>
+        </div>
+      </li>
+      <li class="article-item">
+        <div class="article-meta">
+          <span class="article-cat">Networking</span>
+          <span class="article-read">1 min read</span>
+        </div>
+        <div class="article-body">
+          <a class="article-link" href="article-cors-allowlist.html">A CORS rule that could never work</a>
+          <p class="article-sum">An allow-list that named only localhost could never contain a rotating tunnel hostname. One request, two verdicts, depending on who sent it.</p>
+        </div>
+      </li>
+      <li class="article-item">
+        <div class="article-meta">
+          <span class="article-cat">Process</span>
+          <span class="article-read">1 min read</span>
+        </div>
+        <div class="article-body">
+          <a class="article-link" href="article-out-of-tree-deploys.html">Deploying without touching the source repositories</a>
+          <p class="article-sum">Deployment wiring lives in separate clones as re-appliable patches, so the public repositories stay byte-identical to their last commit.</p>
+        </div>
+      </li>
+      <li class="article-item">
+        <div class="article-meta">
+          <span class="article-cat">Process</span>
+          <span class="article-read">1 min read</span>
+        </div>
+        <div class="article-body">
+          <a class="article-link" href="article-smaller-traps.html">Smaller traps worth writing down</a>
+          <p class="article-sum">Five small failures: a stale bind-mount, a resurrected service, a stale env_file, a global selector, and a file truncated before it was written.</p>
+        </div>
+      </li>
+      <li class="article-item">
+        <div class="article-meta">
+          <span class="article-cat">Infrastructure</span>
+          <span class="article-read">4 min read</span>
+        </div>
+        <div class="article-body">
+          <a class="article-link" href="article-tailscale-nodes.html">Five public demos from one laptop</a>
+          <p class="article-sum">Five unrelated apps, five stable public hostnames, one machine. Why one node per app beat path prefixes, and one first-configuration race.</p>
+        </div>
+      </li>
+      <li class="article-item">
+        <div class="article-meta">
+          <span class="article-cat">Testing</span>
+          <span class="article-read">3 min read</span>
+        </div>
+        <div class="article-body">
+          <a class="article-link" href="article-layout-blind-spot.html">The bug the layout check could not see</a>
+          <p class="article-sum">A nav label grew, the row wrapped, and the header bar doubled in height. The layout check passed 20/20 because a wrapped row is not overflow.</p>
+        </div>
+      </li>
+    </ul>
 
 </main>
 
