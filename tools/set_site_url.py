@@ -11,8 +11,8 @@ decide whether a shared link advertises anything at all:
     real one, and the site's own description may be replaced with a snippet it
     scrapes instead.
 
-Point this at the site's base URL and all four tags become absolute on all ten
-pages:
+Point this at the site's base URL and all four tags become absolute on every
+page:
 
     og:image, twitter:image   ->  <base>/assets/og-card.png
     og:url, rel=canonical     ->  <base>/<page>
@@ -38,11 +38,16 @@ import sys
 from pathlib import Path
 
 OG_IMAGE = "assets/og-card.png"
-PAGES = (
-    "index.html", "work.html", "about.html", "notes.html",
-    "openclaimflow.html", "banking.html", "workflow.html",
-    "michiru.html", "cartographer.html", "claimshield.html",
-)
+
+
+def pages(site: Path) -> list[str]:
+    """Every page in the site, index first, the rest by name.
+
+    Discovered rather than listed: the site grew an article index and ten
+    article pages, and a hardcoded list silently stops covering new pages.
+    """
+    found = sorted(p.name for p in site.glob("*.html"))
+    return ["index.html"] + [p for p in found if p != "index.html"]
 
 # An absolute or relative value already sitting in any of the tags we manage.
 ANY_URL = r'[^"]*'
@@ -82,7 +87,7 @@ def stamp(src: str, base: str | None, page: str) -> tuple[str, int]:
     return src, changes
 
 
-def write_crawler_files(site: Path, base: str | None) -> None:
+def write_crawler_files(site: Path, base: str | None, pages_: list[str]) -> None:
     """sitemap.xml and robots.txt, or remove them when the address is cleared."""
     sitemap, robots = site / "sitemap.xml", site / "robots.txt"
     if base is None:
@@ -91,7 +96,7 @@ def write_crawler_files(site: Path, base: str | None) -> None:
         return
 
     urls = "".join(
-        f"  <url><loc>{page_url(base, p)}</loc></url>\n" for p in PAGES
+        f"  <url><loc>{page_url(base, p)}</loc></url>\n" for p in pages_
     )
     sitemap.write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -125,7 +130,8 @@ def main() -> int:
         sys.exit(f"Not a directory: {site}")
 
     written = 0
-    for page in PAGES:
+    all_pages = pages(site)
+    for page in all_pages:
         path = site / page
         if not path.exists():
             sys.exit(f"Missing page: {path}")
@@ -135,13 +141,13 @@ def main() -> int:
             written += 1
             if not check:
                 path.write_text(src, encoding="utf-8")
-        print(f"  {page:22} {n} tags  {'(would change)' if check and src != original else ''}")
+        print(f"  {page:32} {n} tags  {'(would change)' if check and src != original else ''}")
 
     verb = "would update" if check else "updated"
     what = "cleared" if clear else f"set to {base}"
     if not check:
-        write_crawler_files(site, base)
-    print(f"\n{written}/{len(PAGES)} pages {verb} — address {what}.")
+        write_crawler_files(site, base, all_pages)
+    print(f"\n{written}/{len(all_pages)} pages {verb} — address {what}.")
     print("sitemap.xml and robots.txt " + ("removed." if clear else ("would be written."
           if check else "written.")))
     return 0
