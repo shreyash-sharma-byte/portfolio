@@ -224,9 +224,15 @@ a:hover { color: var(--accent-strong); }
 }
 
 .section {
-  margin-top: 40px;
-  padding-top: 26px;
-  border-top: 1px solid var(--line-2);
+  margin-top: 18px;
+  /* Horizontal padding stays small on phones: the diagram blocks are sized to the
+     full content width, and a roomier inset pushes them past their box. */
+  padding: 20px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+}
+@media (min-width: 720px) {
+  .section { padding: 22px 24px; }
 }
 .section > .section-title { margin-bottom: 12px; }
 
