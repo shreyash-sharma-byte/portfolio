@@ -15,6 +15,12 @@ page's entry block:
 Edit tools/live_urls.json and re-run; nothing else in the page is touched. The
 script is idempotent, so it is safe to run repeatedly.
 
+It also sweeps *renamed* demo hostnames across every page, not just the project
+pages. The home page and Project Work hand-author their own demo links in the
+project cards, so a hostname change used to leave those two linking an address
+that no longer resolves. List the old hostname under "_retired" in
+live_urls.json and re-run; every occurrence anywhere in site/ is rewritten.
+
 Usage:
     python3 tools/set_live_urls.py [--check] [site-dir]
 
@@ -28,6 +34,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import urllib.parse
 from pathlib import Path
 
 # page file -> (key in live_urls.json, mailto request, fallback label, live label)
@@ -94,6 +101,35 @@ def rewrite(src: str, url: str, mailto: str, ask: str, label: str) -> tuple[str,
     return new, n == 1
 
 
+def renames(urls: dict) -> dict[str, str]:
+    """Map a retired demo URL to its current one, from "_retired" in the config.
+
+    "_retired" holds the old hostname labels per project, e.g.
+    {"claims": ["shreyash-claims"]}. The tailnet domain is taken from the live
+    URLs so it is never hardcoded here.
+    """
+    live = {k: v.strip() for k, v in urls.items()
+            if not k.startswith("_") and isinstance(v, str) and v.strip()}
+    domain = ""
+    for url in live.values():
+        host = urllib.parse.urlsplit(url).hostname or ""
+        if "." in host:
+            domain = host.split(".", 1)[1]
+            break
+    if not domain:
+        return {}
+
+    out: dict[str, str] = {}
+    retired = urls.get("_retired") or {}
+    for key, labels in retired.items():
+        current = live.get(key)
+        if not current:
+            continue
+        for label in labels:
+            out[f"https://{label}.{domain}"] = current
+    return out
+
+
 def main() -> int:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     check_only = "--check" in sys.argv
@@ -133,7 +169,23 @@ def main() -> int:
         if not check_only:
             page.write_text(new, encoding="utf-8")
 
-    print(f"\n{changed} page(s) {'to change' if check_only else 'changed'}.")
+    # Every other page — the home page and Project Work author their demo links
+    # by hand inside the project cards, so a rename has to be swept through them.
+    swept = 0
+    for old, current in renames(urls).items():
+        for page in sorted(site.glob("*.html")):
+            src = page.read_text(encoding="utf-8")
+            if old not in src:
+                continue
+            n = src.count(old)
+            swept += n
+            print(f"  {'would rewrite' if check_only else 'rewrote'}  "
+                  f"{page.name}: {n}x {old} -> {current}")
+            if not check_only:
+                page.write_text(src.replace(old, current), encoding="utf-8")
+
+    print(f"\n{changed} page(s) {'to change' if check_only else 'changed'}"
+          + (f"; {swept} renamed link(s) swept." if swept else "."))
     return 0
 
 

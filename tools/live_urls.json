@@ -1,7 +1,11 @@
 {
-  "_comment": "Live demo addresses. All five are now Tailscale Funnel behind stable per-app node hostnames under shreyash-*.tailae7ebb.ts.net — these addresses do NOT rotate. One Tailscale node per app (systemd template tailscaled-node@.service), each Funnel on 443, so every app owns the root of its own hostname: no path prefixes, no base-href changes, no /api collisions. NOTE when adding a node: a Funnel created immediately after the node authenticates never gets its public A record published — reset the funnel and re-add it (tailscale --socket=/run/tailscale-nodes/<name>.sock funnel reset, then funnel --bg <port>) and the record appears within ~5 minutes. After editing, run: python3 tools/set_live_urls.py — that rewrites every project page in one pass. Leave a value empty and that project's page asks the visitor for the URL instead of linking a dead address.",
-  "claims": "https://shreyash-claims.tailae7ebb.ts.net",
-  "workflow": "https://shreyash-workflow.tailae7ebb.ts.net",
+  "_comment": "Live demo addresses. Tailscale Funnel behind stable per-app node hostnames under shreyash-*.tailae7ebb.ts.net — these addresses do NOT rotate. One Tailscale node per app (systemd template tailscaled-node@.service), each Funnel on 443, so every app owns the root of its own hostname: no path prefixes, no base-href changes, no /api collisions. After editing, run: python3 tools/set_live_urls.py — that rewrites every project page in one pass. Leave a value empty and that project's page asks the visitor for the URL instead of linking a dead address. NOTE on missing Funnel DNS: a Funnel can be enabled, certified and serving correctly while its public A record is never created — the CLI reports success and the authoritative zone has no record. 'funnel reset' plus re-add is the usual advice and is unreliable; on 2026-10-04 this tailnet stopped creating new Funnel records altogether, so reset, node rename, down/up and reconnect all failed while three older records kept working. Diagnose with an authoritative query (dig @ns1.dnsimple.com), never a public resolver, which can serve a cached NXDOMAIN for a record that does exist. And never trust `curl <demo-url>` on the host that serves the app: MagicDNS resolves it to a 100.x tailnet address, bypassing the Funnel entirely, and it returns 200 for a demo that is unreachable from the internet. Use: python3 tools/check_demos.py",
+  "_retired": {
+    "claims": ["shreyash-claims"],
+    "workflow": ["shreyash-workflow"]
+  },
+  "claims": "https://shreyash-openclaimflow.tailae7ebb.ts.net",
+  "workflow": "https://shreyash-workflow-ms.tailae7ebb.ts.net",
   "banking": "https://shreyash-banking.tailae7ebb.ts.net",
   "cartographer": "https://shreyash-cartographer.tailae7ebb.ts.net",
   "claimshield": "https://shreyash-claimshield.tailae7ebb.ts.net",

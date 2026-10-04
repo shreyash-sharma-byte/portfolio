@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import ipaddress
 import json
+import re
 import socket
 import ssl
 import sys
@@ -39,6 +40,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 URLS = HERE / "live_urls.json"
+SITE = HERE.parent / "site"
 DOH = "https://dns.google/resolve"
 TIMEOUT = 25
 
@@ -101,6 +103,36 @@ def cgnat(addr: str) -> bool:
         return False
 
 
+def stale_links(demos: dict[str, str]) -> list[str]:
+    """Demo URLs written into the site's HTML that no longer match the config.
+
+    The project pages are stamped by set_live_urls.py, but the home page and
+    Project Work author their demo links by hand — which is how two renamed
+    hostnames sat on those pages pointing at addresses that did not resolve.
+    """
+    current = {u.rstrip("/") for u in demos.values()}
+    domain = ""
+    for url in current:
+        host = urllib.parse.urlsplit(url).hostname or ""
+        if "." in host:
+            domain = host.split(".", 1)[1]
+            break
+    if not domain or not SITE.is_dir():
+        return []
+
+    seen: dict[str, set[str]] = {}
+    for page in sorted(SITE.glob("*.html")):
+        for m in re.finditer(r"https://[a-z0-9-]+\." + re.escape(domain),
+                             page.read_text(encoding="utf-8")):
+            seen.setdefault(m.group(0), set()).add(page.name)
+
+    problems = [f"stale demo URL on {', '.join(sorted(pages))}: {url}"
+                for url, pages in sorted(seen.items()) if url not in current]
+    problems += [f"published in live_urls.json but linked from no page: {url}"
+                 for url in sorted(current) if url not in seen]
+    return problems
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--urls", default=str(URLS))
@@ -161,9 +193,13 @@ def main() -> int:
             print(f"OK    {name:14s} {addrs[0]:16s} HTTP {code}  {host}")
         results.append(row)
 
+    problems = stale_links(demos)
     if args.json:
-        print(json.dumps(results, indent=2))
+        print(json.dumps({"demos": results, "link_problems": problems}, indent=2))
     else:
+        for p in problems:
+            print(f"FAIL  {p}")
+        failures += len(problems)
         print(f"\n{len(demos)} demos, {failures} failing.")
         if failures:
             print("A FAIL above means a link on the site is dead for anyone "
