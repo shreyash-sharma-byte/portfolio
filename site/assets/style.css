@@ -339,14 +339,20 @@ a[href^="https://shreyash-"]::before {
 /* on the filled button the dot has to sit on the accent, not in green */
 .btn-primary[href^="https://shreyash-"]::before { background: var(--on-accent); }
 
-/* Ghost buttons keep a light outline by default, which reads as secondary.
-   The live ones get the accent outline instead, so the demo row looks like a
-   set of actions rather than another line of prose links. */
-.entry-actions a.btn-ghost[href^="https://shreyash-"] {
-  border-color: var(--accent);
+/* Inside a project card the demo is the action, not one more reference beside
+   "Full write-up" and "Repository". It gets a small outlined button in the
+   accent, with the running dot on the inside. */
+.project-foot a[href^="https://shreyash-"] {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: transparent;
   color: var(--accent-strong);
+  font-weight: 500;
 }
-.entry-actions a.btn-ghost[href^="https://shreyash-"]:hover {
+.project-foot a[href^="https://shreyash-"]:hover {
   background: var(--surface-2);
   color: var(--accent-strong);
 }
