@@ -182,9 +182,8 @@ Multiple garbage collectors selected</pre>
       <p class="hint">
         Three traps in reading these numbers: committed is not resident (ZooKeeper runs
         a 512 MB committed heap at ~117 MB RSS); warm is not cold; and snapshot totals
-        move on their own, because a container healthcheck that shells out to
-        <span class="num">kafka-broker-api-versions</span> starts a fresh JVM on every
-        run.
+        move on their own, because a container healthcheck that shells out to a Java
+        command starts a fresh, short-lived JVM on every run.
       </p>
     </div>
   </section>
