@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Five public demos from one laptop · Shreyash Sharma</title>
+<meta name="description" content="Five unrelated apps, five stable public hostnames, one machine. Why one node per app beat path prefixes, and one first-configuration race.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Five public demos from one laptop · Shreyash Sharma">
+<meta property="og:description" content="Five unrelated apps, five stable public hostnames, one machine. Why one node per app beat path prefixes, and one first-configuration race.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Five public demos from one laptop · Shreyash Sharma">
+<meta name="twitter:description" content="Five unrelated apps, five stable public hostnames, one machine. Why one node per app beat path prefixes, and one first-configuration race.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash<span class="brand-rest"> Sharma</span></a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html">Project Work</a>
+      <a href="about.html">About</a>
+      <a href="articles.html">Articles</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="eyebrow"><a href="articles.html">Articles</a> · Infrastructure</p>
+    <h1 class="page-title">Five public demos from one laptop</h1>
+    <p class="page-sub">
+      Five unrelated apps, five stable public hostnames, one machine. One node per app cost five identities and beat path prefixes for three concrete reasons.
+    </p>
+  </div>
+
+  <section class="section" aria-label="Article">
+    <p class="note-meta">one hostname per app, one node per app</p>
+    <div class="note-body">
+      <p>
+        Five demos, five different stacks, one machine. Each one needed a URL that does
+        not change, because the URLs are published on the project pages and two of the
+        apps run an identity provider whose issuer is pinned to the origin the browser
+        used. A URL that rotates on restart is not a URL you can publish.
+      </p>
+      <p>
+        There were two shapes available. Put one hostname in front of everything and give
+        each app a path prefix. Or give each app its own hostname and let it own the
+        root, <code>/</code>, of that name. I chose the second. Each app gets its own
+        node identity with its own <code>*.ts.net</code> hostname; that node terminates
+        TLS and proxies to a port on the machine. Five apps means five nodes, which
+        sounds expensive until you see why the alternative fails.
+      </p>
+    </div>
+    <pre class="pre">ONE HOSTNAME, PATH PREFIXES
+  host/claims      ->  app A
+  host/workflow    ->  app B
+  one origin, so /api is ambiguous
+
+ONE NODE PER APP
+  claims.host      ->  app A owns /
+  workflow.host    ->  app B owns /
+  one origin each, no prefix to rewrite</pre>
+    <div class="note-body mt-16">
+      <p>
+        <b>The three reasons path prefixes fail here.</b> First, one of the front ends
+        is built with a baked <code>&lt;base href="/"&gt;</code>. Every asset URL is
+        resolved from the root, so serving it under a prefix means rewriting the base at
+        build time. That is a per-deploy edit to a repository whose whole point is that
+        it stays untouched, and it has to be re-applied on every rebuild.
+      </p>
+      <p>
+        Second, root-relative API calls become ambiguous on a shared origin. The front
+        end calls <code>/api/...</code>; with one hostname and five apps, the proxy has
+        to decide which app's <code>/api/</code> that is. One app can keep the path and
+        the other four need their API calls rewritten to something prefixed, which is
+        again a build-time change in each repository.
+      </p>
+      <p>
+        Third, one of the demos is a generated site whose own directories already occupy
+        the paths a prefix scheme would want. A prefix is not free real estate: it
+        collides with a directory the site already publishes, and the collision shows up
+        as a 404 on a page that exists.
+      </p>
+      <p>
+        Per-app hostnames remove all three. Each app's root is its own, so the baked base
+        is correct; each origin has exactly one <code>/api/</code>; and no generated
+        directory has to be moved out of the way. The origin is also stable, so the
+        identity-provider issuers and redirect URIs are configured once instead of being
+        rewritten whenever a URL changes. The five nodes are independent processes with
+        their own identities and their own certificates, which is what lets each one hold
+        a hostname of its own.
+      </p>
+      <p>
+        <b>What the platform constrains.</b> Two limits shaped the design. A Funnel
+        terminates TLS on one hostname per node, and only three ports are eligible:
+        443, 8443 and 10000. One hostname per node is the reason this is five nodes and
+        not one node with five names; the port list is the reason every demo is HTTPS on
+        443. A third trap is worth knowing before designing around it: the private
+        publish and the public publish use the same port numbers, and one port cannot be
+        both at once. Whichever command touched the port last wins, so a demo that works
+        for you and 404s for a stranger is a configuration-ordering problem, not a DNS
+        problem.
+      </p>
+      <p>
+        <b>The failure worth keeping.</b> A Funnel created immediately after a new node
+        comes online can fail to get its public DNS record at all. The local app answers
+        the whole time; the name simply does not resolve for anyone outside. Public DNS
+        records for a new Funnel can take up to ten minutes to appear, and in practice
+        the useful wait is about five minutes before re-checking. The mistake was
+        treating the first attempt as permanent. The fix that worked was deterministic:
+        remove the Funnel and add it again, then wait and verify. Retrying the same
+        command on the assumption that the app was broken would not have fixed it,
+        because the app was never the problem.
+      </p>
+      <p>
+        <b>Verification, because a local check lies.</b> The same hostname resolves
+        differently depending on who asks: from the machine it resolves through the
+        private network straight to the node, and from the public internet it resolves to
+        the relay that fronts it. A <code>curl</code> run on the box therefore exercises
+        the private path, not the path a stranger's browser takes. The check that counts
+        is the one made from outside the network. The control matters as much as the
+        check: a nonsense hostname asked of the same relay must fail, or a 200 proves
+        only that something answered.
+      </p>
+      <p class="hint">
+        The honest limit: all five demos and both realms run on one machine, so the
+        machine is the availability boundary. If it is off, all five hostnames stop
+        answering at once. The network layer is not the part that breaks.
+      </p>
+    </div>
+  </section>
+
+  <div class="entry-actions">
+    <a class="btn btn-ghost" href="articles.html">All articles</a>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

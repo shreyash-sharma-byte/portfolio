@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A CORS rule that could never work · Shreyash Sharma</title>
+<meta name="description" content="An allow-list that named only localhost could never contain a rotating tunnel hostname. One request, two verdicts, depending on who sent it.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="A CORS rule that could never work · Shreyash Sharma">
+<meta property="og:description" content="An allow-list that named only localhost could never contain a rotating tunnel hostname. One request, two verdicts, depending on who sent it.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="A CORS rule that could never work · Shreyash Sharma">
+<meta name="twitter:description" content="An allow-list that named only localhost could never contain a rotating tunnel hostname. One request, two verdicts, depending on who sent it.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash<span class="brand-rest"> Sharma</span></a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html">Project Work</a>
+      <a href="about.html">About</a>
+      <a href="articles.html">Articles</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="eyebrow"><a href="articles.html">Articles</a> · Networking</p>
+    <h1 class="page-title">A CORS rule that could never work</h1>
+    <p class="page-sub">
+      An allow-list that named only localhost could never contain a rotating tunnel hostname. The same request got two verdicts depending on who sent it.
+    </p>
+  </div>
+
+  <section class="section" aria-label="Article">
+    <p class="note-meta">an allow-list that could never match</p>
+    <div class="note-body">
+      <p>
+        The API gateway's CORS allow-list named only <code>localhost:4200</code> and
+        <code>localhost:4201</code>. The demo is reached through a tunnel whose hostname
+        changes on every restart, so no fixed list could ever contain it.
+      </p>
+      <p>
+        The confusing part is the asymmetry it produced. Browsers send an
+        <code>Origin</code> header even on same-origin POSTs, so logins failed with
+        <span class="num">403</span> in the browser — while the same request from
+        <code>curl</code>, which sends no <code>Origin</code> at all, succeeded. One
+        request, two verdicts, depending only on who sent it.
+      </p>
+      <p>
+        The durable fix is a pattern-based allow-list with an environment override
+        (<code>allowedOriginPatterns</code>), so any localhost port works out of the box
+        and a deployment sets its own origin. The verification matters more than the
+        change: an allowed origin gets <span class="num">200</span> and an unlisted one
+        still gets <span class="num">403</span> — the policy was made workable, not made
+        permissive.
+      </p>
+    </div>
+  </section>
+
+  <div class="entry-actions">
+    <a class="btn btn-ghost" href="articles.html">All articles</a>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

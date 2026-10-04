@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One identity provider, two realms, two origins · Shreyash Sharma</title>
+<meta name="description" content="Two apps, each with its own realm and its own public hostname, served by one identity provider. 838 MB saved, and the issuer check that proves it.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="One identity provider, two realms, two origins · Shreyash Sharma">
+<meta property="og:description" content="Two apps, each with its own realm and its own public hostname, served by one identity provider. 838 MB saved, and the issuer check that proves it.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="One identity provider, two realms, two origins · Shreyash Sharma">
+<meta name="twitter:description" content="Two apps, each with its own realm and its own public hostname, served by one identity provider. 838 MB saved, and the issuer check that proves it.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash<span class="brand-rest"> Sharma</span></a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html">Project Work</a>
+      <a href="about.html">About</a>
+      <a href="articles.html">Articles</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="eyebrow"><a href="articles.html">Articles</a> · Identity</p>
+    <h1 class="page-title">One identity provider, two realms, two origins</h1>
+    <p class="page-sub">
+      Two apps, each with its own realm and its own public hostname, served by one identity provider. The hard part is not the signature, it is the issuer.
+    </p>
+  </div>
+
+  <section class="section" aria-label="Article">
+    <p class="note-meta">the issuer is the hard part</p>
+    <div class="note-body">
+      <p>
+        Two applications each ran their own Keycloak. That looked necessary, because
+        each realm's issuer has to equal the origin the browser actually used, and the
+        two apps are reached on different hostnames. Keycloak builds the issuer from the
+        origin it believes it is served on:
+        <code>https://&lt;host&gt;/realms/&lt;realm&gt;</code>. A resource server does
+        not merely verify the signature — it checks that the token's <code>iss</code>
+        claim equals its configured issuer character for character.
+      </p>
+      <p>
+        The naive knob, <code>KC_HOSTNAME</code>, is global: one value for the whole
+        server. Set it to one app's hostname and the other app's redirects point at the
+        wrong place. Leave it unset under <code>start-dev</code> and Keycloak advertises
+        <code>localhost</code>, which no remote browser can reach.
+      </p>
+      <p>
+        The mechanism that makes it work is a <b>per-realm</b> attribute that outranks
+        the global hostname. Keycloak resolves the origin it advertises in this order:
+      </p>
+    </div>
+    <pre class="pre">1st  realm frontendUrl
+2nd  global KC_HOSTNAME
+3rd  request Host header</pre>
+    <div class="note-body mt-16">
+      <p>
+        <b>Verify it, don't trust it.</b> The decisive test asks with no
+        <code>Host</code> header at all, so nothing request-derived can be involved —
+        only realm data can produce the answer. Two different public origins from two
+        discovery documents on one port is proof. Discovery documents prove
+        <i>advertising</i> though, not login, so the end-to-end check was a real
+        authorization-code flow: PKCE verifier, POST the credentials, read
+        <code>?code=</code> out of the 302, exchange it, decode the access token, and
+        then call the API with it. A 401 there means the issuer did not match; a 200
+        means the resource server validated a token minted by the shared instance.
+      </p>
+      <p>
+        <b>838 MB saved</b> — 631 MB for one instance against 784 MB + 685 MB for two.
+        That is the largest single memory win after the JVM retune, and unlike most of
+        the others it is justified on memory alone.
+      </p>
+      <p>
+        The second half of the problem is redirect URIs, which rotate with the tunnel
+        hostname. Updating the issuer but not the client's registered redirect URIs
+        fails in the browser with
+        <span class="num">HTTP 400 Invalid parameter: redirect_uri</span> — while every
+        <code>curl</code> check still passes, because curl never follows the browser's
+        path. Both are now written together, per realm, from one script.
+      </p>
+      <p class="hint">
+        The importer is filename-sensitive: a realm named
+        <span class="num">workflow-realm</span> must live in
+        <span class="num">workflow-realm-realm.json</span>. And a realm export is not a
+        deployment manifest — exports capture what was configured when they were
+        written, so the deploy origin has to be applied at deploy time.
+      </p>
+    </div>
+  </section>
+
+  <div class="entry-actions">
+    <a class="btn btn-ghost" href="articles.html">All articles</a>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

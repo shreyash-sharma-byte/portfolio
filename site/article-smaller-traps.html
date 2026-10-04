@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smaller traps worth writing down · Shreyash Sharma</title>
+<meta name="description" content="Five small failures that each cost more than they should have: a stale bind-mount, a resurrected service, a stale env_file, a global selector, a truncated file.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Smaller traps worth writing down · Shreyash Sharma">
+<meta property="og:description" content="Five small failures that each cost more than they should have: a stale bind-mount, a resurrected service, a stale env_file, a global selector, a truncated file.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Smaller traps worth writing down · Shreyash Sharma">
+<meta name="twitter:description" content="Five small failures that each cost more than they should have: a stale bind-mount, a resurrected service, a stale env_file, a global selector, a truncated file.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash<span class="brand-rest"> Sharma</span></a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html">Project Work</a>
+      <a href="about.html">About</a>
+      <a href="articles.html">Articles</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="eyebrow"><a href="articles.html">Articles</a> · Process</p>
+    <h1 class="page-title">Smaller traps worth writing down</h1>
+    <p class="page-sub">
+      Five small failures that each cost more than they should have. None of them was hard to fix; all of them were hard to see.
+    </p>
+  </div>
+
+  <section class="section" aria-label="Article">
+    <p class="note-meta">five failures, one page</p>
+    <ul class="caps-list">
+      <li><b>A single-file bind-mount serves a stale inode.</b> Editing a config on the host and reloading inside the container changed nothing — the mount still pointed at the old file, and <span class="num">nginx -t</span> happily validated it, which is the tell that you are testing the wrong thing. Mount the directory, or recreate the container.</li>
+      <li><b><span class="num">docker compose up</span> resurrects what you retired.</b> Both <span class="num">depends_on</span> and a start script with no service arguments will pull a removed dependency back up. Retired services now sit behind a non-default profile, invisible to a plain <span class="num">up -d</span>.</li>
+      <li><b>A container restart does not re-read <span class="num">env_file</span>.</b> Only a recreate picks up changes. This bit twice, through a Django <span class="num">ALLOWED_HOSTS</span> setting.</li>
+      <li><b>Angular's emulated encapsulation does not protect a component from global selectors.</b> A landing page reused <span class="num">class="steps"</span>; the app's global stylesheet already had <span class="num">.steps li { display: flex }</span> for its own stepper, and every text run in the list became a separate flex item. It compiled cleanly and every string check passed. Namespace the classes you introduce.</li>
+      <li><b>Write the string before you open the file.</b> <span class="num">open(path, "w").write(&lt;expression that raises&gt;)</span> truncates the file the instant <span class="num">open()</span> is called, because the argument is evaluated afterwards. A formatting error silently emptied an 8,828-byte stylesheet.</li>
+    </ul>
+  </section>
+
+  <div class="entry-actions">
+    <a class="btn btn-ghost" href="articles.html">All articles</a>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

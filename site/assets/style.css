@@ -668,6 +668,44 @@ td.num, th.num { font-family: var(--mono); font-variant-numeric: tabular-nums; w
 .note-body b { color: var(--ink); }
 
 /* --------------------------------------------------------------------------
+   Article index — a hairline list, never a card grid. Category, title, one
+   line of summary. No border box: the rules are the separation.
+   -------------------------------------------------------------------------- */
+
+.articles { border-top: 1px solid var(--line); }
+
+.article-item {
+  border-bottom: 1px solid var(--line);
+  padding: 14px 0;
+}
+
+.article-meta {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.article-link {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.article-link:hover { color: var(--accent); text-decoration: underline; }
+
+.article-sum {
+  font-size: 0.875rem;
+  color: var(--ink-2);
+  margin-top: 4px;
+  max-width: 84ch;
+}
+
+/* --------------------------------------------------------------------------
    Footer (spec §8.9) — exact credit line, last thing on every page
    -------------------------------------------------------------------------- */
 

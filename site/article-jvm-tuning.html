@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JVM tuning that was measured, not guessed · Shreyash Sharma</title>
+<meta name="description" content="Nine Spring services and a broker retuned twice from measurement. Two attempts failed, and the correction to my own thread-stack claim is the part worth keeping.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM tuning that was measured, not guessed · Shreyash Sharma">
+<meta property="og:description" content="Nine Spring services and a broker retuned twice from measurement. Two attempts failed, and the correction to my own thread-stack claim is the part worth keeping.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="JVM tuning that was measured, not guessed · Shreyash Sharma">
+<meta name="twitter:description" content="Nine Spring services and a broker retuned twice from measurement. Two attempts failed, and the correction to my own thread-stack claim is the part worth keeping.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash<span class="brand-rest"> Sharma</span></a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html">Project Work</a>
+      <a href="about.html">About</a>
+      <a href="articles.html">Articles</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="eyebrow"><a href="articles.html">Articles</a> · Memory</p>
+    <h1 class="page-title">JVM tuning that was measured, not guessed</h1>
+    <p class="page-sub">
+      Nine Spring services and a broker, retuned twice from measurement. Two attempts failed, and the correction to my own thread-stack claim is the part worth keeping.
+    </p>
+  </div>
+
+  <section class="section" aria-label="Article">
+    <p class="note-meta">JVM · containers</p>
+    <div class="note-body">
+      <p>
+        Nine Spring services and a Kafka broker were running with
+        <code>-Xms256m -Xmx1g</code>, inherited from a container template. Observed live
+        sets were 94–170 MB, so the 1 GB ceiling bought nothing — but it did make the
+        collector lazy, which is how a Java service's RSS climbs quietly over hours.
+      </p>
+      <p>
+        The heap was also the wrong place to look first. On the busiest of the nine, RSS
+        was 472 MB: about 126 MB of committed heap, of which only ~63 MB was live,
+        against 107 MB of metaspace, ~50 MB of JIT code cache and ~6 MB of thread
+        stacks. Tuning <code>-Xmx</code> tunes less than a third of the process.
+      </p>
+      <p>
+        Two rounds of measurement followed. The first replaced the inherited flags per
+        service:
+      </p>
+    </div>
+    <pre class="pre">-Xms128m -Xmx384m -XX:MaxMetaspaceSize=256m
+-XX:ReservedCodeCacheSize=96m -XX:+UseSerialGC</pre>
+    <div class="note-body mt-16">
+      <p>
+        Kafka got the same treatment through its own environment variable, because the
+        image default is <code>-Xms1G -Xmx1G</code> — a gigabyte committed for a broker
+        holding a handful of demo messages. It moved to <code>-Xms256m -Xmx512m</code>.
+      </p>
+      <p>
+        <b>Round one results.</b> Committed heap per service fell from 256 MB to about
+        123 MB. Across the ten retuned JVMs, RSS went from 5,181 MB to 3,719 MB —
+        roughly <b>1.4 GB</b>. Whole-machine JVM footprint went from 7,344 MB to about
+        5,890 MB across 15–16 JVMs.
+      </p>
+      <p>
+        <b>The caveat, stated plainly.</b> The "before" column was measured on services
+        warmed up for 20–40 minutes; the "after" column about 10 minutes after a
+        restart. Some of that delta is therefore warm-versus-cold, not flags. The part
+        that is attributable to the flags is mechanistic and solid: committed heap
+        dropping from 256 MB to ~123 MB is <code>-Xms</code> alone, plus SerialGC's
+        saved threads and collector structures.
+      </p>
+      <p>
+        The second round halved the committed heap on the nine services again and
+        applied the same discipline to the remaining containers:
+      </p>
+    </div>
+    <pre class="pre">-Xms64m -Xmx256m -XX:MaxMetaspaceSize=192m
+-XX:ReservedCodeCacheSize=64m -XX:+UseSerialGC
+-XX:TieredStopAtLevel=1
+-XX:ActiveProcessorCount=2
+-Xss512k</pre>
+    <div class="note-body mt-16">
+      <p>
+        That took the heap ceiling from 384 MB to 256 MB and the committed floor from
+        128 MB to 64 MB. Keycloak went from 700 MB to 380 MB, Zipkin from 283 MB to
+        143 MB, Kafka from 462 MB to 405 MB and ZooKeeper from 122 MB to 77 MB. Five
+        unused tunnels left over from the previous hostname scheme were still running,
+        128 MB across five processes serving URLs nothing linked to; they were stopped
+        after confirming that no live identity-provider origin pointed at them. The
+        whole demo stack went from <b>5,512 MB to 3,404 MB, down 2,108 MB or 38%</b>.
+      </p>
+      <p>
+        <b>Attribution, again.</b> Of the 1,351 MB saved across the nine services,
+        roughly 576 MB (9 × 64 MB) is mechanically certain: it is the <code>-Xms</code>
+        halving, and it would hold even if the "before" snapshot were re-measured warm.
+        The rest is a mix of smaller code cache, fewer JIT and GC threads, and
+        metaspace and GC-structure differences, measured in place.
+      </p>
+      <p>
+        The reason Keycloak was the outlier for so long is worth keeping. Its image sets
+        <code>-XX:MaxRAMPercentage=70</code>, and the container it ran in declared no
+        memory limit, so the JVM sized its maximum heap against the host's full
+        31.8 GB and felt free to grow. An explicit <code>-Xmx</code> appended last on
+        the command line wins over the percentage. A percentage is the right tool when
+        a container limit exists; an explicit ceiling is clearer when it does not.
+      </p>
+      <p>
+        <b>Failure one: the collector was already chosen.</b> I added
+        <code>-XX:+UseSerialGC</code> to Keycloak's appended options, reasoning that a
+        small heap wants a serial collector. The image already selects one in its own
+        options. Two selections is not a last-one-wins situation, it is a hard startup
+        error:
+      </p>
+    </div>
+    <pre class="pre">Error occurred during initialization of VM
+Multiple garbage collectors selected</pre>
+    <div class="note-body mt-16">
+      <p>
+        With <code>Restart=always</code> on the unit, the container entered a restart
+        loop and Keycloak was down, which took logins for two demos with it. It was
+        caught because the readiness poll run immediately after the recreate never
+        returned 200, so I read the container log and saw the error. Removing the flag
+        and recreating brought it back in 25 seconds. Appending flags to a vendor image
+        is not neutral: you are arguing with defaults you did not write, so read them
+        first. The other half of the lesson is that a single-instance critical service
+        should never be recreated without a readiness check in the same command. The
+        poll is what turned a silent broken state into a two-minute fix.
+      </p>
+      <p>
+        <b>Failure two: class-data sharing crashed the JVM.</b> Nine Spring services
+        each commit 44–107 MB of metaspace loading largely the same framework classes,
+        so archiving those classes once and memory-mapping them looked like the
+        remaining structural win. The archive built cleanly at 100 MB. Starting a JVM
+        with it segfaulted inside HotSpot while reading the shared archive, and with
+        <code>Restart=always</code> it crash-looped for four minutes and wrote 25 crash
+        dumps before it was stopped. Deleting the archive and the override had the
+        service serving again 15 seconds later. <code>-Xshare:auto</code>, the default,
+        is supposed to ignore a bad archive; a corrupt or incompatible one can still
+        crash the VM. A CDS archive is also bound to the exact JDK build, classpath and
+        flag set, so rebuilding a service invalidates it. The approach is abandoned
+        here, and the earlier note calling it the next multi-JVM win now reads as
+        attempted, crashed, do not retry.
+      </p>
+      <p>
+        <b>The correction to my own earlier claim.</b> An earlier write-up argued to
+        leave <code>-Xss512k</code> and <code>-XX:TieredStopAtLevel=1</code> alone, for
+        two good reasons: thread stacks are cheap in practice, and C1-only JIT costs
+        peak throughput. I set both anyway, and the measurement proved the first half
+        of that right while making the size concrete. Forty-six thread stacks reserved
+        22.3 MB of address space but only <b>5.96 MB was resident, about 130 KB per
+        thread</b>. The "1 MB stack" is a reservation, not RAM. So
+        <code>-Xss512k</code> is low value: a few MB per JVM, and it should not be sold
+        as a memory win. <code>-XX:TieredStopAtLevel=1</code> is a real trade rather
+        than a free saving: it trims the code cache and removes the C2 compiler
+        threads, but it does reduce peak throughput, and it is the first flag to remove
+        if a demo ever feels sluggish.
+      </p>
+      <p>
+        <b>What was deliberately left alone</b> matters as much: ZGC and G1 (both cost
+        more than SerialGC at this heap size), <code>-XX:MaxDirectMemorySize</code>
+        (the gateway is Reactor Netty and does its I/O through direct buffers), and
+        virtual threads. Java 21 virtual threads are for scaling concurrency, not for
+        shrinking an idle process: with 30–47 threads per service the whole stack
+        footprint is single-digit MB. Enabling them is a feature to demonstrate, not a
+        memory optimisation.
+      </p>
+      <p class="hint">
+        Three traps in reading these numbers: committed is not resident (ZooKeeper runs
+        a 512 MB committed heap at ~117 MB RSS); warm is not cold; and snapshot totals
+        move on their own, because a container healthcheck that shells out to
+        <span class="num">kafka-broker-api-versions</span> starts a fresh JVM on every
+        run.
+      </p>
+    </div>
+  </section>
+
+  <div class="entry-actions">
+    <a class="btn btn-ghost" href="articles.html">All articles</a>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

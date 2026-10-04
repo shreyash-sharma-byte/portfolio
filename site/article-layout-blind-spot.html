@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The bug the layout check could not see · Shreyash Sharma</title>
+<meta name="description" content="A nav label grew, the flex row wrapped, and the header bar doubled in height. The layout check passed 20/20 because a wrapped row is not overflow.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="The bug the layout check could not see · Shreyash Sharma">
+<meta property="og:description" content="A nav label grew, the flex row wrapped, and the header bar doubled in height. The layout check passed 20/20 because a wrapped row is not overflow.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The bug the layout check could not see · Shreyash Sharma">
+<meta name="twitter:description" content="A nav label grew, the flex row wrapped, and the header bar doubled in height. The layout check passed 20/20 because a wrapped row is not overflow.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash<span class="brand-rest"> Sharma</span></a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html">Project Work</a>
+      <a href="about.html">About</a>
+      <a href="articles.html">Articles</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="eyebrow"><a href="articles.html">Articles</a> · Testing</p>
+    <h1 class="page-title">The bug the layout check could not see</h1>
+    <p class="page-sub">
+      A nav label grew, the flex row wrapped, and the header bar doubled in height. The layout check passed 20/20, because a wrapped row is not overflow.
+    </p>
+  </div>
+
+  <section class="section" aria-label="Article">
+    <p class="note-meta">a check only sees the failure mode it was written for</p>
+    <div class="note-body">
+      <p>
+        The header is a flex row: the wordmark, then five nav links. I lengthened one
+        nav label. That was the whole change, and it was enough to break the phone
+        layout without breaking anything a machine was checking.
+      </p>
+      <p>
+        Measured at 390px: the nav's five links needed <b>252.3px</b> and the box they
+        were in was <b>234px</b>. The wordmark took 108.6px of the same row. The nav
+        row's default is <code>flex-wrap: wrap</code>, so instead of overflowing it
+        wrapped to a second row, and the header bar grew from <b>65px to 109px</b>. On
+        an 844px-tall phone that is 44px of screen spent on a bar that had fitted on one
+        line the day before.
+      </p>
+      <p>
+        The site has a layout check. It rendered every page at 390px and 1280px,
+        compared <code>documentElement.scrollWidth</code> against the viewport, and
+        listed every element whose right edge passed it. It reported <b>20/20
+        passing</b>. It was right, and it was useless: a wrapped flex row is not
+        overflow. Every box sits inside the viewport, the document is exactly 390px
+        wide, and the only thing that changed was height, which the check never looks at.
+      </p>
+      <p>
+        That is the real lesson, and it is not really about flexbox. A check only sees
+        the failure mode it was written for. This one was written for horizontal
+        overflow, because that was the previous bug of this kind: a 784px column inside
+        a 390px viewport. It cannot see a row that gives up and wraps, so as far as it
+        was concerned nothing had happened.
+      </p>
+      <p>
+        The fix had two parts, and the second is the one worth copying. The layout fix
+        restores the row: drop the surname from the wordmark at phone widths, which
+        returns the 108.6px it was holding, and pin the nav to
+        <code>flex-wrap: nowrap</code> so a row can never quietly become two. The check
+        fix follows from that. With wrapping disabled, a future label that is too long
+        has nowhere to go but sideways, and sideways is exactly what the existing check
+        measures. The bar is back to <b>65px</b> on one row, and the measurement that
+        caused the incident is written into the stylesheet beside the rule, so the next
+        person to change a label can see what the budget is.
+      </p>
+      <p class="hint">
+        What I did not do: add a check for header height. Pinning the row to one line
+        makes the failure mode the failure the existing check already catches, which is
+        a smaller change and the one that keeps working. A second checker nobody
+        remembers to read is not a fix.
+      </p>
+    </div>
+  </section>
+
+  <div class="entry-actions">
+    <a class="btn btn-ghost" href="articles.html">All articles</a>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>

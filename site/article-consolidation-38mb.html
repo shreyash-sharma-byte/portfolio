@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The consolidation that saved 38 MB, not 150 · Shreyash Sharma</title>
+<meta name="description" content="Seven Postgres containers merged into one. The estimate was 100–150 MB; the measurement was 38 MB, and the decision was kept on operational grounds.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="The consolidation that saved 38 MB, not 150 · Shreyash Sharma">
+<meta property="og:description" content="Seven Postgres containers merged into one. The estimate was 100–150 MB; the measurement was 38 MB, and the decision was kept on operational grounds.">
+<meta property="og:image" content="assets/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The consolidation that saved 38 MB, not 150 · Shreyash Sharma">
+<meta name="twitter:description" content="Seven Postgres containers merged into one. The estimate was 100–150 MB; the measurement was 38 MB, and the decision was kept on operational grounds.">
+<meta name="twitter:image" content="assets/og-card.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="index.html">Shreyash<span class="brand-rest"> Sharma</span></a>
+    <nav class="topnav" aria-label="Primary">
+      <a href="work.html">Project Work</a>
+      <a href="about.html">About</a>
+      <a href="articles.html">Articles</a>
+      <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="mailto:shreyashms2501@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <div class="page-head">
+    <p class="eyebrow"><a href="articles.html">Articles</a> · Infrastructure</p>
+    <h1 class="page-title">The consolidation that saved 38 MB, not 150</h1>
+    <p class="page-sub">
+      Seven Postgres containers merged into one shared instance. The estimate was 100–150 MB, the measurement was 38 MB, and the decision was kept anyway.
+    </p>
+  </div>
+
+  <section class="section" aria-label="Article">
+    <p class="note-meta">the result that contradicted the estimate</p>
+    <div class="note-body">
+      <p>
+        Seven per-project Postgres containers were merged into one shared instance. The
+        estimate was 100–150 MB. The measurement was <b>~38 MB</b>.
+      </p>
+      <p>
+        The estimate was wrong for a good reason: Postgres's per-<i>instance</i>
+        overhead is small, and connection backends dominate the footprint. Seven idle
+        servers do not cost seven times one server.
+      </p>
+      <p>
+        The consolidation was kept anyway, on operational grounds rather than memory:
+        one backup target, one connection point, and the next project needs no new
+        database server at all. Publishing the honest number next to the decision is a
+        better signal than a fabricated win.
+      </p>
+      <p>
+        Two related decisions came out of the same exercise. First, <b>separate
+        databases rather than separate schemas</b> inside the shared server — the
+        database name is what every application already specifies, so connection
+        strings change only in host and port; isolation is enforced by Postgres rather
+        than by convention; and it avoids the shared <code>public</code> schema,
+        extension collisions and migration tools that assume they own the database.
+      </p>
+      <p>
+        Second, and more importantly, <b>what was not consolidated.</b> Collapsing all
+        the Spring services into one JVM was superficially attractive — several Spring
+        Boot apps can share a runtime, each with its own port and datasource, and the
+        module structure survives. What does not survive is independent deployability:
+        no independent restart, no fault isolation, one heap for every service, one
+        classpath for every dependency, and process-global state fighting you through
+        system properties, static initialisers and shutdown hooks. That produces a
+        modular monolith — respectable, but a different architecture, and it would have
+        made the repository's own description false. Estimated saving: ~2.1 GB,
+        permanently trading the thing the project exists to demonstrate. Rejected.
+      </p>
+    </div>
+  </section>
+
+  <div class="entry-actions">
+    <a class="btn btn-ghost" href="articles.html">All articles</a>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <span>Made by <a href="https://github.com/shreyash-sharma-byte" target="_blank" rel="noopener">Shreyash Sharma</a></span>
+    <span class="sep">·</span>
+    <a href="https://www.linkedin.com/in/shreyash-sharma-908b741a9" target="_blank" rel="noopener">LinkedIn</a>
+    <span class="sep">·</span>
+    <a href="mailto:shreyashms2501@gmail.com">shreyashms2501@gmail.com</a>
+  </div>
+</footer>
+
+</body>
+</html>
