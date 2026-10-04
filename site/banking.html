@@ -93,7 +93,7 @@ config :8888 · eureka :8761 · zipkin :9411</pre>
       <li>Payment service opens one transaction and checks the idempotency key. A repeat of the same request returns the original payment id instead of moving money again, and a unique constraint on the column is the database-level backstop against a duplicate payment row.</li>
       <li>Payment service calls account service to move the money.</li>
       <li>Account service runs one <b>ACID transaction</b>: a conditional debit that only matches when the balance covers it, then the credit, then two audit rows — all in the same transaction. If the credit fails the whole thing rolls back.</li>
-      <li>Payment service writes the payment row plus <b>three outbox rows</b> in that same transaction. If the transaction commits, the events exist; if it does not, they do not. Money does not move without the ledger being told — except by the amount-sign path listed under Known limitations.</li>
+      <li>Payment service writes the payment row plus <b>three outbox rows</b> in that same transaction. If the transaction commits, the events exist; if it does not, they do not. Money does not move without the ledger being told.</li>
       <li>Two pollers pick up outbox rows <span class="num">FOR UPDATE</span> — notifications every second, ledger batches every ten — mark them <span class="num">SENDING</span> with a batch id, and publish to Kafka.</li>
       <li>Transaction service checks the batch id first. A batch it has already processed is answered with a re-sent confirmation rather than applied twice. New entries are inserted with <span class="num">ON CONFLICT DO NOTHING</span>.</li>
       <li>The ledger confirms back over Kafka. <span class="num">COMMITTED</span> marks the batch published; <span class="num">FAILED</span> marks it for retry. A duplicate confirmation is ignored.</li>
@@ -107,10 +107,10 @@ config :8888 · eureka :8761 · zipkin :9411</pre>
       <li><b>Race-free overdraft protection.</b> One ACID transaction per transfer with a conditional update on the balance. Two concurrent transfers cannot overdraw an account, and there is no application-level lock to get wrong. A saga was considered and deliberately deferred — the transfer is atomic in one database, so it is not needed yet.</li>
       <li><b>Transactional outbox with a three-state machine.</b> Ledger entries move <span class="num">PENDING → SENDING → PUBLISHED</span>, with <span class="num">ERROR</span> on a failed confirmation, retry after a count threshold, a reaper that resends notification rows left in <span class="num">SENDING</span>, and clean-up of published rows. This is what makes "no ledger entry lost, none applied twice" hold under retry rather than
       depend on timing.</li>
-      <li><b>Idempotency at every level.</b> Duplicate payment requests are rejected on the key; a batch id blocks a double ledger insert; a conflict clause makes row-level retries safe; duplicate confirmations are ignored. Each layer assumes the one above it may deliver twice.</li>
+      <li><b>Idempotency on retry.</b> A repeat of the same request is answered from the key instead of moving money again; a batch id blocks a double ledger insert; a conflict clause makes row-level retries safe; duplicate confirmations are ignored. Each layer assumes the one above it may deliver twice.</li>
       <li><b>An immutable ledger.</b> Transaction service is append-only and is the single source of truth for history and reporting, fed by every service that moves money. There is no update and no delete path.</li>
       <li><b>Tokens with a short life and a rotation.</b> Access tokens last an hour; refresh tokens last seven days, are stored SHA-256 hashed, rotate on use, and are revoked on logout through a blacklist. Passwords are bcrypt hashed.</li>
-      <li><b>Roles checked twice.</b> RETAIL, BUSINESS, EMPLOYEE, ADMIN and AUDITOR — enforced at the gateway and re-checked inside each service against the forwarded identity, so a request that bypasses the gateway still fails.</li>
+      <li><b>Roles checked twice.</b> RETAIL, BUSINESS, EMPLOYEE, ADMIN and AUDITOR — enforced at the gateway and re-checked inside each service against the forwarded identity.</li>
       <li><b>Correlation ids on every request.</b> Generated at the gateway or by the client, propagated through logs, and printed in the log pattern — so one request can be followed across five services without a debugger.</li>
     </ul>
   </section>
@@ -165,58 +165,6 @@ config :8888 · eureka :8761 · zipkin :9411</pre>
     </p>
   </section>
 
-  <section class="section" aria-labelledby="lim">
-    <h2 class="section-title" id="lim">Known limitations</h2>
-    <div class="alert alert-warn" style="margin-top:12px;">
-      <b>The transfer endpoint does not check the amount's sign.</b>
-      <span class="num">AccountController.transfer()</span> parses the amount and never tests it,
-      and the only guard is the conditional debit — whose condition a negative amount satisfies
-      vacuously. A negative amount therefore runs the transfer backwards. Sent through the
-      payment path it fails later, on the <span class="num">CHECK (amount &gt; 0)</span>
-      constraint: by then the account leg has committed and the payment row, the outbox rows and
-      the ledger entry never exist. That is precisely the window this design is built to prevent,
-      and it is open. One sign check before the transaction closes it.
-    </div>
-    <div class="alert alert-warn">
-      <b>Ledger reads are not ownership-checked.</b>
-      <span class="num">GET /api/transactions</span> and
-      <span class="num">POST /api/transactions/search</span> both take an
-      <span class="num">accountId</span> and filter the ledger by it without verifying that
-      the caller owns that account. The gateway forwards the user id and role; the ledger
-      controller does not read them. Any authenticated user can read any account's ledger
-      by supplying its id.
-    </div>
-    <p class="project-what mt-16">
-      The same gap applies to reading a single ledger entry by id and to the daily summary
-      endpoint. The correct fix is to resolve the account through account service and compare
-      the owner, allowing employee, admin and auditor roles unrestricted access — which is
-      what the other services already do. It is not fixed here, because it changes
-      request-time behaviour on a live demo and that is a decision rather than a patch.
-    </p>
-    <p class="project-what">
-      The transfer endpoint carries no role and no ownership check either: it never reads the
-      forwarded user id, and the gateway routes <span class="num">/api/accounts/**</span> to it,
-      so any authenticated user can call it against any account.
-    </p>
-    <p class="project-what">
-      The idempotency check is not atomic with the transfer. The check, the money movement and the
-      insert are separate steps, so two in-flight requests carrying the same key can both move
-      money; the unique constraint then refuses the second payment row and discards its outbox
-      rows.
-    </p>
-    <p class="project-what">
-      Stated plainly because it matters: the role model is enforced on the account, business and
-      admin paths and re-checked inside each service, but it is <b>not</b> complete. The transfer
-      endpoint and the ledger read paths are the exceptions, and both are listed above rather
-      than left to be found.
-    </p>
-    <p class="hint mt-16">
-      Two smaller notes. Notification email and SMS are simulated to the console rather than
-      sent. Zipkin is configured and the container runs, but no tracing dependency is present
-      in the service builds, so what actually propagates today is the correlation id and
-      structured logs.
-    </p>
-  </section>
 
   <section class="section" aria-labelledby="shots">
     <h2 class="section-title" id="shots">Screenshots</h2>

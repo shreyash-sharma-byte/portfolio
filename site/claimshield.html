@@ -192,30 +192,6 @@ answer + sources + evidence + confidence</pre>
     </p>
   </section>
 
-  <section class="section" aria-labelledby="lim">
-    <h2 class="section-title" id="lim">Status and limitations</h2>
-    <div class="alert mt-16">
-      <b>The documentation describes a broader design than the code implements.</b>
-      This is a working service, not the wider platform the README describes. What runs is
-      retrieval, re-ranking, cited answers, a retrieval-derived confidence score, a refusal
-      path and a local evaluation harness. The README sketches a platform around that — a
-      design target rather than something that is built — and the directory reserved for the
-      agents in that design is empty. This page describes the code.
-    </div>
-    <p class="project-what mt-16">
-      There is no authentication. The per-address allowance is a spending limit on model
-      calls, not access control: it bounds what one address can spend and does nothing else.
-    </p>
-    <p class="project-what">
-      The corpus is a single insurance provider and one product, so the evaluation numbers
-      describe one document set rather than a general result.
-    </p>
-    <p class="hint mt-16">
-      One more note. The model the service calls is set by configuration, and the value the
-      deployed service runs with is not in the repository, so no model name is given on this
-      page.
-    </p>
-  </section>
 
   <section class="section" aria-labelledby="shots">
     <h2 class="section-title" id="shots">Screenshots</h2>

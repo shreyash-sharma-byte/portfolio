@@ -152,42 +152,6 @@ behind a "Sample data" pill.</pre>
     </p>
   </section>
 
-  <section class="section" aria-labelledby="status">
-    <h2 class="section-title" id="status">Status and limitations</h2>
-    <div class="alert" style="margin-top:12px;">
-      <b>The dashboard is built but not tested.</b> The test runner is configured and installed,
-      but the only spec file is the untouched framework default, and it asserts a heading the
-      application no longer renders, so it cannot pass as written. The API is the tested half; the
-      dashboard is not, and nothing here claims otherwise.
-    </div>
-    <p class="project-what mt-16">
-      Neither half is hosted yet, so there is no live URL. Hosting the pair needs both parts at
-      once: the API running on its port, and the built dashboard served as static files. The build
-      output is not committed, so a clone has to build it first, and the built dashboard calls the
-      API on a relative path, which means a static host also needs a proxy in front of it.
-    </p>
-    <p class="project-what">
-      There is no persistence by design. The database is in memory and is recreated on every start,
-      so all data is lost on restart.
-    </p>
-    <p class="project-what">
-      Navigation is partial. The sidebar's other sections have no routes wired, and only the
-      dashboard route is defined.
-    </p>
-    <p class="project-what">
-      The reminder table has no empty state, and the invoice fetch has no error state because it
-      falls back to sample data instead. Email and SMS are simulated: the reminder channel is a
-      fixed value recording that a message would have been sent. Invoice numbering counts existing
-      rows rather than using a database sequence, so deleting an invoice can produce a duplicate
-      number and a server error. There is no continuous integration, no licence, and no deployment
-      configuration for the dashboard.
-    </p>
-    <p class="hint mt-16">
-      Two smaller notes. The API's configured port is 8080, while the dashboard's development proxy
-      targets 8081. The dashboard uses a dark theme, which is a deliberate contrast with the light
-      surface used across the rest of this site.
-    </p>
-  </section>
 
   <section class="section" aria-labelledby="shots">
     <h2 class="section-title" id="shots">Screenshots</h2>

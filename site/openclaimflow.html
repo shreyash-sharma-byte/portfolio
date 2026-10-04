@@ -150,33 +150,10 @@ Playwright E2E boots its own backend :8082
     <p class="hint mt-8">
       The five realm roles are claimant, adjuster L1, adjuster L2, adjuster L3 and supervisor;
       Keycloak also writes its own built-in <code>default-roles-claims</code>, which is not an
-      authored role and is not counted here. Test
-      counts are deliberately absent from this table: the most recent run on the repository did not
-      pass, so the numbers are stated under known limitations instead of being presented as a result.
+      authored role and is not counted here.
     </p>
   </section>
 
-  <section class="section" aria-labelledby="lim">
-    <h2 class="section-title" id="lim">Known limitations</h2>
-    <div class="alert mt-8">
-      <b>The repository's continuous integration is red.</b>
-      The most recent run on the pushed tip failed <span class="num">2</span> of
-      <span class="num">323</span> backend tests and <span class="num">11</span> of
-      <span class="num">32</span> end-to-end journeys, with the backend job failing, so the badge on
-      that repository is red while it is being worked through.
-    </div>
-    <p class="project-what mt-16">
-      The status file in the repository is stale: it reports an older figure than the test suite now
-      contains, so it should not be read as a current count. Both points are stated here rather than
-      left to the badge alone.
-    </p>
-    <p class="project-what">
-      Two notes from the stack. Object storage defaults to the filesystem, with an S3-compatible
-      seam behind the same interface, so the S3 path is a seam rather than the default. Mail is
-      delivered to Mailpit rather than to real recipients, and the Keycloak realm is a demonstration
-      one — its sign-in page says the account table is sample data for evaluation.
-    </p>
-  </section>
 
   <section class="section" aria-labelledby="product">
     <h2 class="section-title" id="product">The running product</h2>

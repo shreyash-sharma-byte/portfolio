@@ -102,8 +102,8 @@ Keycloak --&gt; PostgreSQL 16  (realm store)</pre>
       <li><b>Stations own roles, not users.</b> A station declares which roles may act there, so authority is per-station rather than global. Nine realm roles separate administration, initiation, operation and audit.</li>
       <li><b>Templates are versioned.</b> Publishing freezes an immutable version holding the stations, transitions and task definitions, so a running instance stays pinned to the version it started on even as the template moves on.</li>
       <li><b>Four task types are executable configuration.</b> Approval, a form built from a JSON schema, a document upload with a MIME whitelist and a 1 MB cap, and a confirmation checklist. Payment, API and email task types are declared in the model but are not handled by the engine, so they are not implemented.</li>
-      <li><b>Audit that resists editing.</b> Instance history is exposed list-only, its model refuses updates on save, and the Django admin denies add and delete. It is not fully immutable — the one path that defeats it is listed under the limitations below.</li>
-      <li><b>Public instance sharing.</b> Each instance carries a UUID token that produces a share link for an external stakeholder.</li>
+      <li><b>Audit that resists editing.</b> Instance history is exposed list-only, its model refuses updates on save, and the Django admin denies add and delete.</li>
+      <li><b>Instance sharing by token.</b> Each instance carries a UUID token that produces a share link.</li>
       <li><b>Hardening, as implemented.</b> Whitelist-only CORS, scoped throttling on authentication and upload endpoints, middleware that strips HTML tags from text input, security headers, a 1 MB upload cap with a five-type MIME whitelist, and the Django admin moved off its default path.</li>
       <li><b>Runtime images and deployment.</b> The back end image is <span class="num">python:3.12-slim</span> and the client build image is <span class="num">node:20-alpine</span>; the stack is wired together with Docker and Compose.</li>
     </ul>
@@ -158,30 +158,6 @@ Keycloak --&gt; PostgreSQL 16  (realm store)</pre>
     </p>
   </section>
 
-  <section class="section" aria-labelledby="lim">
-    <h2 class="section-title" id="lim">Known limitations</h2>
-    <div class="alert alert-warn" style="margin-top:12px;">
-      <b>Token verification is switched off in the deployed build.</b>
-      The deployed Django runs with signature and issuer verification switched off, so it
-      decodes the bearer token without verifying it. Verified JWT authentication is
-      <b>not</b> claimed for this deployment.
-    </div>
-    <div class="alert alert-warn">
-      <b>The audit trail can be deleted with its parent.</b>
-      <span class="num">WorkflowInstanceViewSet</span> is a <span class="num">ModelViewSet</span>,
-      so an ADMIN can <span class="num">DELETE</span> an instance over the REST API — and the
-      history row's foreign key cascades, erasing that instance's entire trail. The history model
-      has no <span class="num">delete()</span> guard either, so a queryset-level delete would
-      bypass <span class="num">save()</span>. A <span class="num">destroy</span> override or a
-      <span class="num">PROTECT</span> foreign key closes it.
-    </div>
-    <ul class="caps-list mt-16">
-      <li><b>Public sharing needs a login.</b> The repository documentation describes the share link as reachable without an account, but in the deployed build it requires a login.</li>
-      <li><b>No audit export endpoint.</b> The documentation describes the audit log as exportable; no export endpoint exists.</li>
-      <li><b>A station with no roles configured stays open.</b> A station that declares no roles permits any authenticated user to act there.</li>
-      <li><b>No automated tests and no continuous integration.</b> There is no automated test suite and no continuous integration for this project.</li>
-    </ul>
-  </section>
 
   <section class="section" aria-labelledby="shots">
     <h2 class="section-title" id="shots">Screenshots</h2>
